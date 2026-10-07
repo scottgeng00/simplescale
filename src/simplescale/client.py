@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -95,11 +96,18 @@ class LocalSGLangClient:
     async def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         if not self.session:
             raise RuntimeError("client is not started")
-        async with self.session.post(self.endpoint + path, json=payload) as response:
-            body = await response.text()
-            if response.status >= 400:
-                raise RuntimeError(f"HTTP {response.status}: {body[:500]}")
-            return json.loads(body)
+        for attempt in range(3):
+            try:
+                async with self.session.post(self.endpoint + path, json=payload) as response:
+                    body = await response.text()
+                    if response.status >= 400:
+                        raise RuntimeError(f"HTTP {response.status}: {body[:500]}")
+                    return json.loads(body)
+            except (aiohttp.ClientError, asyncio.TimeoutError):
+                if attempt == 2:
+                    raise
+                await asyncio.sleep(1)
+        raise AssertionError("unreachable")
 
     async def generate(
         self,

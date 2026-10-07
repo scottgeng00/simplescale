@@ -42,7 +42,8 @@ def submit(args: argparse.Namespace) -> None:
     results, state, logs = run / "results", run / "state", run / "logs"
     logs.mkdir(parents=True, exist_ok=True)
     manager_command = [
-        "sbatch", "--parsable", f"--chdir={repo}",
+        "sbatch", "--parsable", f"--job-name={args.job_name}-manager",
+        f"--chdir={repo}",
         f"--output={logs}/manager-%j.out", str(manager_script),
         str(repo / ".venv/bin/simplescale-manager"),
         "--manifest", str(Path(args.manifest).resolve()),
@@ -67,6 +68,8 @@ def submit(args: argparse.Namespace) -> None:
         "--handler", args.handler, "--model", str(Path(args.model).resolve()),
         "--tp-size", str(args.tp), "--context-length", str(args.context_length),
         "--task-concurrency", str(args.task_concurrency),
+        "--startup-timeout", str(args.startup_timeout),
+        "--startup-attempts", str(args.startup_attempts),
     ]
     cpus = CPUS_PER_NODE * args.tp // 8
     memory = MEMORY_MB_PER_NODE * args.tp // 8
@@ -75,6 +78,7 @@ def submit(args: argparse.Namespace) -> None:
             [
                 "sbatch",
                 "--parsable",
+                f"--job-name={args.job_name}-{qos}",
                 f"--qos={qos}",
                 f"--array=0-{count - 1}",
                 f"--gres=gpu:h200:{args.tp}",
@@ -105,9 +109,12 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--max-documents", type=int)
     command.add_argument("--context-length", type=int, default=16384)
     command.add_argument("--task-concurrency", type=int, default=512)
+    command.add_argument("--startup-timeout", type=float, default=1200)
+    command.add_argument("--startup-attempts", type=int, default=2)
     command.add_argument("--worker-time", default="2-00:00:00")
     command.add_argument("--wandb-project")
     command.add_argument("--wandb-name")
+    command.add_argument("--job-name", default="simplescale")
     command.add_argument("--repo", default=".")
     command.add_argument("--dry-run", action="store_true")
     command.set_defaults(run=submit)

@@ -80,18 +80,94 @@ def _write_results(lease: dict, rows: list[dict]) -> dict[str, Any]:
     }
 
 
-async def _wait_ready(endpoint: str, process: asyncio.subprocess.Process) -> None:
+async def _wait_ready(
+    endpoint: str,
+    process: asyncio.subprocess.Process,
+    stopping: asyncio.Event,
+    draining: asyncio.Event,
+    timeout_seconds: float,
+) -> bool:
+    deadline = asyncio.get_running_loop().time() + timeout_seconds
     timeout = aiohttp.ClientTimeout(total=5)
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        while process.returncode is None:
+        while (
+            process.returncode is None
+            and not stopping.is_set()
+            and not draining.is_set()
+        ):
             try:
                 async with session.get(endpoint + "/health") as response:
                     if response.status < 400:
-                        return
+                        return True
             except (aiohttp.ClientError, asyncio.TimeoutError):
                 pass
-            await asyncio.sleep(2)
+            remaining = deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                raise asyncio.TimeoutError(
+                    f"SGLang was not ready after {timeout_seconds:g}s"
+                )
+            await asyncio.sleep(min(2, remaining))
+    if stopping.is_set() or draining.is_set():
+        await _stop_process(process)
+        return False
     raise RuntimeError(f"SGLang exited before becoming ready: {process.returncode}")
+
+
+def _signal_process(process: asyncio.subprocess.Process, sig: signal.Signals) -> None:
+    if process.returncode is None:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(process.pid, sig)
+
+
+async def _stop_process(process: asyncio.subprocess.Process) -> int:
+    _signal_process(process, signal.SIGTERM)
+    try:
+        return await asyncio.wait_for(process.wait(), timeout=30)
+    except asyncio.TimeoutError:
+        _signal_process(process, signal.SIGKILL)
+        return await process.wait()
+
+
+def _server_env(attempt: int) -> dict[str, str]:
+    env = os.environ.copy()
+    for name in ("TRITON_CACHE_DIR", "TORCHINDUCTOR_CACHE_DIR", "FLASHINFER_WORKSPACE_BASE"):
+        if root := env.get(name):
+            path = Path(root) / f"attempt-{attempt + 1}"
+            path.mkdir(parents=True, exist_ok=True)
+            env[name] = str(path)
+    return env
+
+
+async def _start_server(
+    command: list[str],
+    args: argparse.Namespace,
+    stopping: asyncio.Event,
+    draining: asyncio.Event,
+) -> asyncio.subprocess.Process | None:
+    error: Exception | None = None
+    for attempt in range(max(1, args.startup_attempts)):
+        if stopping.is_set() or draining.is_set():
+            return None
+        if attempt:
+            print(f"retrying SGLang startup ({attempt + 1}/{args.startup_attempts})", flush=True)
+        process = await asyncio.create_subprocess_exec(
+            *command, env=_server_env(attempt), start_new_session=True
+        )
+        try:
+            if await _wait_ready(
+                f"http://127.0.0.1:{args.port}",
+                process,
+                stopping,
+                draining,
+                args.startup_timeout,
+            ):
+                return process
+            return None
+        except (RuntimeError, asyncio.TimeoutError) as current:
+            error = current
+            await _stop_process(process)
+            print(f"SGLang startup attempt {attempt + 1} failed: {current}", flush=True)
+    raise RuntimeError(f"SGLang failed to start after {args.startup_attempts} attempts") from error
 
 
 async def _run_lease(
@@ -181,15 +257,11 @@ async def supervise(args: argparse.Namespace) -> int:
         command.extend(["--load-format", args.load_format])
     if not args.command and args.skip_tokenizer_init:
         command.append("--skip-tokenizer-init")
-    process = await asyncio.create_subprocess_exec(*command)
     stopping = asyncio.Event()
     draining = asyncio.Event()
 
     def stop() -> None:
         stopping.set()
-        if process.returncode is None:
-            with contextlib.suppress(ProcessLookupError):
-                process.terminate()
 
     loop = asyncio.get_running_loop()
     loop.add_signal_handler(signal.SIGINT, stop)
@@ -197,7 +269,9 @@ async def supervise(args: argparse.Namespace) -> int:
         loop.add_signal_handler(sig, draining.set)
 
     endpoint = f"http://127.0.0.1:{args.port}"
-    await _wait_ready(endpoint, process)
+    process = await _start_server(command, args, stopping, draining)
+    if process is None:
+        return 0
     worker_id = args.worker_id or "-".join(
         filter(None, [os.getenv("SLURM_JOB_ID"), os.getenv("SLURM_ARRAY_TASK_ID")])
     ) or f"worker-{os.getpid()}"
@@ -256,6 +330,9 @@ async def supervise(args: argparse.Namespace) -> int:
             else:
                 await asyncio.sleep(2)
 
+        server_failed = process.returncode is not None and not (
+            stopping.is_set() or draining.is_set()
+        )
         if active:
             if not draining.is_set():
                 stopping.set()
@@ -263,15 +340,8 @@ async def supervise(args: argparse.Namespace) -> int:
                     task.cancel()
             await asyncio.gather(*active, return_exceptions=True)
 
-    clean_shutdown = stopping.is_set() or draining.is_set() or process.returncode is None
-    if process.returncode is None:
-        process.terminate()
-    try:
-        code = await asyncio.wait_for(process.wait(), timeout=30)
-    except asyncio.TimeoutError:
-        process.kill()
-        code = await process.wait()
-    return 0 if clean_shutdown else code
+    code = await _stop_process(process)
+    return (code or 1) if server_failed else 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -290,6 +360,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--mem-fraction-static", type=float, default=0.90)
     parser.add_argument("--task-concurrency", type=int, default=512)
     parser.add_argument("--heartbeat-seconds", type=float, default=30)
+    parser.add_argument("--startup-timeout", type=float, default=1200)
+    parser.add_argument("--startup-attempts", type=int, default=2)
     parser.add_argument("--load-format")
     parser.add_argument("--skip-tokenizer-init", action="store_true")
     parser.add_argument("command", nargs=argparse.REMAINDER)

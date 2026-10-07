@@ -12,6 +12,12 @@
 set -euo pipefail
 
 export PYTHONUNBUFFERED=1
+unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+cache_root="${SLURM_TMPDIR:-/tmp}/simplescale-${SLURM_JOB_ID}-${SLURM_ARRAY_TASK_ID:-0}"
+export TRITON_CACHE_DIR="${cache_root}/triton"
+export TORCHINDUCTOR_CACHE_DIR="${cache_root}/torchinductor"
+export FLASHINFER_WORKSPACE_BASE="${cache_root}/flashinfer"
+mkdir -p "${TRITON_CACHE_DIR}" "${TORCHINDUCTOR_CACHE_DIR}" "${FLASHINFER_WORKSPACE_BASE}"
 
 drain_worker() {
   local requeue="${1}"
@@ -30,4 +36,13 @@ trap 'drain_worker 0' TERM
 
 "$@" &
 worker_pid=$!
+set +e
 wait "${worker_pid}"
+code=$?
+set -e
+if (( code != 0 && ${SLURM_RESTART_COUNT:-0} < 10 )); then
+  echo "worker exited ${code}; requeueing (${SLURM_RESTART_COUNT:-0}/10)" >&2
+  scontrol requeue "${SLURM_JOB_ID}"
+  exit 0
+fi
+exit "${code}"
