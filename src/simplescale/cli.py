@@ -50,6 +50,8 @@ def submit(args: argparse.Namespace) -> None:
         "--chunk-size", str(args.chunk_size),
         "--start-workers", str(args.start_workers),
     ]
+    if args.max_documents is not None:
+        manager_command.extend(["--max-documents", str(args.max_documents)])
     if args.wandb_project:
         manager_command.extend(
             [
@@ -100,6 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--tp", type=_tp, default=8)
     command.add_argument("--chunk-size", type=int, default=64)
     command.add_argument("--start-workers", type=int, default=1)
+    command.add_argument("--max-documents", type=int)
     command.add_argument("--context-length", type=int, default=16384)
     command.add_argument("--task-concurrency", type=int, default=512)
     command.add_argument("--worker-time", default="2-00:00:00")

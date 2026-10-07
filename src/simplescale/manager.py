@@ -45,12 +45,16 @@ def _atomic_json(path: Path, value: dict) -> None:
     os.replace(temporary, path)
 
 
-def _scan_manifest(path: Path, chunk_size: int) -> tuple[list[Chunk], str, int]:
+def _scan_manifest(
+    path: Path, chunk_size: int, max_documents: int | None = None
+) -> tuple[list[Chunk], str, int]:
     chunks: list[Chunk] = []
     digest = hashlib.sha256()
     start = first_row = rows = total = 0
     with path.open("rb") as source:
-        while line := source.readline():
+        while (max_documents is None or total < max_documents) and (
+            line := source.readline()
+        ):
             json.loads(line)
             digest.update(line)
             rows += 1
@@ -73,9 +77,15 @@ class WorkQueue:
         chunk_size: int = 64,
         lease_seconds: float = 180,
         start_workers: int = 1,
+        max_documents: int | None = None,
         now: Callable[[], float] = time.time,
     ) -> None:
-        if chunk_size < 1 or lease_seconds <= 0 or start_workers < 1:
+        if (
+            chunk_size < 1
+            or lease_seconds <= 0
+            or start_workers < 1
+            or (max_documents is not None and max_documents < 1)
+        ):
             raise ValueError("chunk size, lease seconds, and start workers must be positive")
         self.manifest = Path(manifest).resolve()
         self.output_dir = Path(output_dir).resolve()
@@ -85,7 +95,9 @@ class WorkQueue:
         self.now = now
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.state_dir.mkdir(parents=True, exist_ok=True)
-        self.chunks, digest, rows = _scan_manifest(self.manifest, chunk_size)
+        self.chunks, digest, rows = _scan_manifest(
+            self.manifest, chunk_size, max_documents
+        )
         metadata = {
             "manifest": str(self.manifest),
             "sha256": digest,
@@ -93,6 +105,8 @@ class WorkQueue:
             "chunk_size": chunk_size,
             "chunks": len(self.chunks),
         }
+        if max_documents is not None:
+            metadata["max_documents"] = max_documents
         meta_path = self.state_dir / "run.json"
         if meta_path.exists() and json.loads(meta_path.read_text()) != metadata:
             raise ValueError(f"state directory belongs to a different run: {meta_path}")
@@ -352,6 +366,7 @@ async def serve(args: argparse.Namespace) -> None:
         chunk_size=args.chunk_size,
         lease_seconds=args.lease_seconds,
         start_workers=args.start_workers,
+        max_documents=args.max_documents,
     )
     runner = web.AppRunner(create_app(queue, token))
     await runner.setup()
@@ -392,6 +407,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--chunk-size", type=int, default=64)
     parser.add_argument("--lease-seconds", type=float, default=180)
     parser.add_argument("--start-workers", type=int, default=1)
+    parser.add_argument("--max-documents", type=int)
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--advertise-host")
     parser.add_argument("--port", type=int, default=0)

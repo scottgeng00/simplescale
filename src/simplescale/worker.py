@@ -11,6 +11,7 @@ import os
 import signal
 import sys
 import uuid
+from functools import cache
 from pathlib import Path
 from typing import Any, Callable
 
@@ -27,13 +28,32 @@ def _load_handler(spec: str) -> Callable:
     return getattr(importlib.import_module(module), name)
 
 
+@cache
+def _source_fd(path: str) -> int:
+    return os.open(path, os.O_RDONLY)
+
+
+def _resolve(task: dict) -> dict:
+    reference = task.pop("_ref", None)
+    if not reference:
+        return task
+    data = os.pread(
+        _source_fd(str(Path(reference["path"]).resolve())),
+        int(reference["length"]),
+        int(reference["offset"]),
+    )
+    if len(data) != int(reference["length"]):
+        raise ValueError(f"short read from {reference['path']}")
+    return json.loads(data) | task
+
+
 def _read_tasks(lease: dict) -> list[dict]:
     chunk = lease["chunk"]
     tasks = []
     with Path(lease["manifest"]).open("rb") as source:
         source.seek(chunk["start"])
         while source.tell() < chunk["end"]:
-            tasks.append(json.loads(source.readline()))
+            tasks.append(_resolve(json.loads(source.readline())))
     return tasks
 
 

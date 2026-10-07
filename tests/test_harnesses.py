@@ -1,4 +1,7 @@
+import json
+
 from simplescale.harnesses.megadocs import latent_thoughts, rephrase
+from simplescale.worker import _read_tasks
 
 
 class LLM:
@@ -22,3 +25,25 @@ async def test_megadocs_harnesses():
         "megadoc": "ab<think>thought</think>cd<think>thought</think>e",
         "generations": 2,
     }
+
+
+def test_pointer_task(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text('{"id":"source-id","text":"hello"}\n')
+    task = {
+        "_ref": {"path": str(raw), "offset": 0, "length": raw.stat().st_size},
+        "sampling_params": {"temperature": 1.0},
+    }
+    manifest = tmp_path / "manifest.jsonl"
+    manifest.write_text(json.dumps(task) + "\n")
+    lease = {
+        "manifest": str(manifest),
+        "chunk": {"start": 0, "end": manifest.stat().st_size},
+    }
+    assert _read_tasks(lease) == [
+        {
+            "id": "source-id",
+            "text": "hello",
+            "sampling_params": {"temperature": 1.0},
+        }
+    ]

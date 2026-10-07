@@ -50,6 +50,17 @@ async def generate(task, llm):
     return await rephrase(task | {"generations": 8}, llm)
 ```
 
+A task may instead reference one record in a raw JSONL file. Other manifest
+fields are overlaid on the loaded record:
+
+```json
+{"_ref":{"path":"/data/raw.jsonl","offset":0,"length":1234},"sampling_params":{"temperature":1.0}}
+```
+
+Build one with `python scripts/build_manifest.py RAW OUT --rows N`; generation
+count defaults to `--generations 1`, and sampling parameters default to
+`--sampling-params '{"temperature":1.0}'`.
+
 ## Setup
 
 ```bash

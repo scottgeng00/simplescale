@@ -51,6 +51,16 @@ def test_expiry_fencing_and_restart(tmp_path):
     restored.close()
 
 
+def test_max_documents(tmp_path):
+    manifest = tmp_path / "work.jsonl"
+    manifest.write_text("".join(json.dumps({"id": i}) + "\n" for i in range(5)))
+    queue = WorkQueue(
+        manifest, tmp_path / "out", tmp_path / "state", max_documents=3
+    )
+    assert queue.metadata["rows"] == 3
+    queue.close()
+
+
 async def test_http_claim_complete(tmp_path):
     manifest = tmp_path / "work.jsonl"
     manifest.write_text('{"id":1}\n')
