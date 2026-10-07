@@ -24,6 +24,32 @@ task ID and the returned value.
 `llm.chat(messages=...)` to apply the model's chat template through SGLang's
 OpenAI-compatible chat endpoint.
 
+## Megadocs baselines
+
+The paper's exact prompts and sampling defaults are available as handlers:
+
+```text
+simplescale.harnesses.megadocs:rephrase
+simplescale.harnesses.megadocs:latent_thoughts
+```
+
+Both consume DCLM records directly (`text` and, normally, `id`), avoiding a
+second copied input manifest. Set `generations` per task (default 1);
+`sampling_params` may override temperature, output length, or other SGLang
+options. Rephrasing returns only the independent articles. Latent thoughts
+splits the document into `G+1` equal-token pieces with SGLang's own tokenizer
+and necessarily embeds the source in the assembled `<think>...</think>`
+megadoc. Use a worker context length large enough for the untruncated source.
+For one setting across an existing manifest, use a tiny wrapper rather than
+rewriting the data:
+
+```python
+from simplescale.harnesses import rephrase
+
+async def generate(task, llm):
+    return await rephrase(task | {"generations": 8}, llm)
+```
+
 ## Setup
 
 ```bash

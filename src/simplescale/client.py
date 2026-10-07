@@ -133,3 +133,13 @@ class LocalSGLangClient:
         if request_id:
             payload["rid"] = request_id
         return await self._post("/v1/chat/completions", payload)
+
+    async def tokenize(self, text: str) -> list[int]:
+        response = await self._post(
+            "/v1/tokenize", {"prompt": text, "add_special_tokens": False}
+        )
+        return response["tokens"]
+
+    async def detokenize(self, tokens: list[list[int]]) -> list[str]:
+        response = await self._post("/v1/detokenize", {"tokens": tokens})
+        return response["text"]

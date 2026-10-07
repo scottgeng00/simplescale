@@ -6,3 +6,4 @@ __pycache__/
 benchmark-results/
 manager-state/
 dist/
+runs/
