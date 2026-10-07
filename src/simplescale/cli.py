@@ -71,6 +71,8 @@ def submit(args: argparse.Namespace) -> None:
         "--startup-timeout", str(args.startup_timeout),
         "--startup-attempts", str(args.startup_attempts),
     ]
+    if args.prefetch is not None:
+        worker.extend(["--prefetch", str(args.prefetch)])
     cpus = CPUS_PER_NODE * args.tp // 8
     memory = MEMORY_MB_PER_NODE * args.tp // 8
     for qos, count in args.pool or [("h200_dream_high", 1)]:
@@ -109,6 +111,7 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--max-documents", type=int)
     command.add_argument("--context-length", type=int, default=16384)
     command.add_argument("--task-concurrency", type=int, default=512)
+    command.add_argument("--prefetch", type=int)
     command.add_argument("--startup-timeout", type=float, default=1200)
     command.add_argument("--startup-attempts", type=int, default=2)
     command.add_argument("--worker-time", default="2-00:00:00")

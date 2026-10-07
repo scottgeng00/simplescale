@@ -87,8 +87,9 @@ Submit one manager and any mix of worker pools:
 TP may be 1, 2, 4, or 8. Resources scale with TP from the partition's
 8-GPU/192-CPU/1,992,294-MB node shape, so TP8 consumes the complete node.
 Workers process prefetched chunks through one shared concurrency limit, keeping
-SGLang fed across chunk tails. `h200_dream_high` workers prefetch three chunks
-and other QoS pools prefetch two. On Slurm's preemption signal, a worker stops
+SGLang fed across chunk tails. `h200_dream_high` workers prefetch eight chunks
+and other QoS pools prefetch six; override this with `--prefetch`. On Slurm's
+preemption signal, a worker stops
 claiming work, drains its leased chunks, and then requeues. Lease expiry returns
 work from dead workers to the queue; stale attempts cannot be accepted.
 

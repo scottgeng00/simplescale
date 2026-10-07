@@ -275,7 +275,9 @@ async def supervise(args: argparse.Namespace) -> int:
     worker_id = args.worker_id or "-".join(
         filter(None, [os.getenv("SLURM_JOB_ID"), os.getenv("SLURM_ARRAY_TASK_ID")])
     ) or f"worker-{os.getpid()}"
-    prefetch = 3 if os.getenv("SLURM_JOB_QOS") == "h200_dream_high" else 2
+    prefetch = args.prefetch or (
+        8 if os.getenv("SLURM_JOB_QOS") == "h200_dream_high" else 6
+    )
     semaphore = asyncio.Semaphore(args.task_concurrency)
     active: set[asyncio.Task] = set()
     finished = False
@@ -359,6 +361,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--context-length", type=int, default=16384)
     parser.add_argument("--mem-fraction-static", type=float, default=0.90)
     parser.add_argument("--task-concurrency", type=int, default=512)
+    parser.add_argument("--prefetch", type=int)
     parser.add_argument("--heartbeat-seconds", type=float, default=30)
     parser.add_argument("--startup-timeout", type=float, default=1200)
     parser.add_argument("--startup-attempts", type=int, default=2)
