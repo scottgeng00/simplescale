@@ -10,6 +10,8 @@
 
 set -euo pipefail
 
+unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+
 requeue_manager() {
   scontrol requeue "${SLURM_JOB_ID}"
   exit 0

@@ -69,6 +69,7 @@ Submit one manager and any mix of worker pools:
   --pool h200_dream_high=8 \
   --pool h200_lowest=32 \
   --worker-time 2-00:00:00 \
+  --wandb-project simplescale \
   --tp 8
 ```
 

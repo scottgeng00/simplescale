@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import hashlib
 import json
 import os
@@ -289,6 +290,53 @@ def create_app(queue: WorkQueue, token: str = "") -> web.Application:
     return app
 
 
+async def _track(queue: WorkQueue, args: argparse.Namespace, state_dir: Path) -> None:
+    for key in (
+        "WANDB_API_KEY",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+    ):
+        os.environ.pop(key, None)
+    import wandb
+
+    id_path = state_dir / "wandb-id"
+    if not id_path.exists():
+        id_path.write_text(uuid.uuid4().hex + "\n")
+    try:
+        run = await asyncio.to_thread(
+            wandb.init,
+            project=args.wandb_project,
+            name=args.wandb_name,
+            id=id_path.read_text().strip(),
+            resume="allow",
+            config=queue.metadata,
+            dir=str(state_dir),
+        )
+        while True:
+            status = queue.status()
+            elapsed = queue.now() - queue.started_at if queue.started_at else 0
+            await asyncio.to_thread(
+                run.log,
+                {
+                    **{f"queue/{key}": value for key, value in status.items()},
+                    "queue/progress": status["completed"] / max(status["chunks"], 1),
+                    "queue/chunks_per_second": status["completed"] / max(elapsed, 1),
+                },
+            )
+            if status["done"]:
+                break
+            await asyncio.sleep(args.wandb_interval)
+    except Exception as error:
+        print(f"wandb tracking disabled: {error!r}", flush=True)
+    finally:
+        if "run" in locals():
+            await asyncio.to_thread(run.finish)
+
+
 async def serve(args: argparse.Namespace) -> None:
     state_dir = Path(args.state_dir).resolve()
     token_path = state_dir / "token"
@@ -319,10 +367,19 @@ async def serve(args: argparse.Namespace) -> None:
             "token_file": str(token_path),
         },
     )
+    tracking = (
+        asyncio.create_task(_track(queue, args, state_dir))
+        if args.wandb_project
+        else None
+    )
     print(f"manager ready at {endpoint}", flush=True)
     try:
         await asyncio.Event().wait()
     finally:
+        if tracking:
+            tracking.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await tracking
         queue.close()
         await runner.cleanup()
 
@@ -338,6 +395,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--advertise-host")
     parser.add_argument("--port", type=int, default=0)
+    parser.add_argument("--wandb-project")
+    parser.add_argument("--wandb-name")
+    parser.add_argument("--wandb-interval", type=float, default=30)
     return parser
 
 

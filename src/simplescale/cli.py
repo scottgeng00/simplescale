@@ -41,18 +41,23 @@ def submit(args: argparse.Namespace) -> None:
     run = Path(args.run_dir).resolve()
     results, state, logs = run / "results", run / "state", run / "logs"
     logs.mkdir(parents=True, exist_ok=True)
-    manager = _submit(
-        [
-            "sbatch", "--parsable", f"--chdir={repo}",
-            f"--output={logs}/manager-%j.out", str(manager_script),
-            str(repo / ".venv/bin/simplescale-manager"),
-            "--manifest", str(Path(args.manifest).resolve()),
-            "--output-dir", str(results), "--state-dir", str(state),
-            "--chunk-size", str(args.chunk_size),
-            "--start-workers", str(args.start_workers),
-        ],
-        args.dry_run,
-    )
+    manager_command = [
+        "sbatch", "--parsable", f"--chdir={repo}",
+        f"--output={logs}/manager-%j.out", str(manager_script),
+        str(repo / ".venv/bin/simplescale-manager"),
+        "--manifest", str(Path(args.manifest).resolve()),
+        "--output-dir", str(results), "--state-dir", str(state),
+        "--chunk-size", str(args.chunk_size),
+        "--start-workers", str(args.start_workers),
+    ]
+    if args.wandb_project:
+        manager_command.extend(
+            [
+                "--wandb-project", args.wandb_project,
+                "--wandb-name", args.wandb_name or run.name,
+            ]
+        )
+    manager = _submit(manager_command, args.dry_run)
     print(f"manager {manager}")
     worker = [
         str(worker_script), str(repo / ".venv/bin/simplescale-worker"),
@@ -98,6 +103,8 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--context-length", type=int, default=16384)
     command.add_argument("--task-concurrency", type=int, default=16)
     command.add_argument("--worker-time", default="2-00:00:00")
+    command.add_argument("--wandb-project")
+    command.add_argument("--wandb-name")
     command.add_argument("--repo", default=".")
     command.add_argument("--dry-run", action="store_true")
     command.set_defaults(run=submit)
