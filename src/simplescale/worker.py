@@ -268,7 +268,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--context-length", type=int, default=16384)
     parser.add_argument("--mem-fraction-static", type=float, default=0.90)
-    parser.add_argument("--task-concurrency", type=int, default=16)
+    parser.add_argument("--task-concurrency", type=int, default=512)
     parser.add_argument("--heartbeat-seconds", type=float, default=30)
     parser.add_argument("--load-format")
     parser.add_argument("--skip-tokenizer-init", action="store_true")

@@ -70,7 +70,7 @@ class WorkQueue:
         output_dir: str | Path,
         state_dir: str | Path,
         *,
-        chunk_size: int = 16,
+        chunk_size: int = 64,
         lease_seconds: float = 180,
         start_workers: int = 1,
         now: Callable[[], float] = time.time,
@@ -389,7 +389,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--state-dir", required=True)
-    parser.add_argument("--chunk-size", type=int, default=16)
+    parser.add_argument("--chunk-size", type=int, default=64)
     parser.add_argument("--lease-seconds", type=float, default=180)
     parser.add_argument("--start-workers", type=int, default=1)
     parser.add_argument("--host", default="0.0.0.0")
