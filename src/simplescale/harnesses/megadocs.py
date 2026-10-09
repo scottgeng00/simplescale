@@ -41,17 +41,39 @@ def _outputs(response: dict[str, Any]) -> list[str]:
     return [choice["message"]["content"] for choice in response["choices"]]
 
 
-async def rephrase(task: dict[str, Any], llm: Any) -> dict[str, list[str]]:
+def _token_limit(task: dict[str, Any]) -> int | None:
+    limit = task.get("max_document_tokens")
+    if limit is None:
+        return None
+    limit = int(limit)
+    if limit < 1:
+        raise ValueError("max_document_tokens must be positive")
+    return limit
+
+
+async def _truncate(task: dict[str, Any], llm: Any) -> tuple[str, bool]:
+    text = task["text"]
+    limit = _token_limit(task)
+    if limit is None or len(text) * 4 <= limit or len(text.encode()) <= limit:
+        return text, False
+    tokens = await llm.tokenize(text)
+    if len(tokens) <= limit:
+        return text, False
+    return (await llm.detokenize([tokens[:limit]]))[0], True
+
+
+async def rephrase(task: dict[str, Any], llm: Any) -> dict[str, Any]:
     """Generate G independent Wikipedia-style rephrases of ``task['text']``."""
+    text, truncated = await _truncate(task, llm)
     params = _params(task, 1024)
     params["n"] = int(task.get("generations", 1))
     if params["n"] < 1:
         raise ValueError("generations must be positive")
     response = await llm.chat(
-        messages=_messages(REPHRASE.format(text=task["text"])),
+        messages=_messages(REPHRASE.format(text=text)),
         sampling_params=params,
     )
-    return {"rephrases": _outputs(response)}
+    return {"rephrases": _outputs(response), "source_truncated": truncated}
 
 
 def _split(tokens: list[int], count: int) -> list[list[int]]:
@@ -69,9 +91,18 @@ async def latent_thoughts(task: dict[str, Any], llm: Any) -> dict[str, Any]:
     if requested < 1:
         raise ValueError("generations must be positive")
     tokens = await llm.tokenize(task["text"])
+    limit = _token_limit(task)
+    truncated = limit is not None and len(tokens) > limit
+    if truncated:
+        tokens = tokens[:limit]
     generations = min(requested, max(0, len(tokens) - 1))
     if not generations:
-        return {"megadoc": task["text"], "generations": 0}
+        text = (await llm.detokenize([tokens]))[0] if truncated else task["text"]
+        return {
+            "megadoc": text,
+            "generations": 0,
+            "source_truncated": truncated,
+        }
 
     pieces = await llm.detokenize(_split(tokens, generations + 1))
     params = _params(task, 512)
@@ -96,4 +127,8 @@ async def latent_thoughts(task: dict[str, Any], llm: Any) -> dict[str, Any]:
         f"<think>{thought}</think>{piece}"
         for thought, piece in zip(thoughts, pieces[1:])
     )
-    return {"megadoc": megadoc, "generations": generations}
+    return {
+        "megadoc": megadoc,
+        "generations": generations,
+        "source_truncated": truncated,
+    }

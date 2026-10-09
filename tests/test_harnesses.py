@@ -18,12 +18,26 @@ class LLM:
 
 async def test_megadocs_harnesses():
     assert await rephrase({"text": "abcde", "generations": 2}, LLM()) == {
-        "rephrases": ["thought", "thought"]
+        "rephrases": ["thought", "thought"],
+        "source_truncated": False,
     }
     result = await latent_thoughts({"text": "abcde", "generations": 2}, LLM())
     assert result == {
         "megadoc": "ab<think>thought</think>cd<think>thought</think>e",
         "generations": 2,
+        "source_truncated": False,
+    }
+    assert await rephrase({"text": "abcde", "max_document_tokens": 3}, LLM()) == {
+        "rephrases": ["thought"],
+        "source_truncated": True,
+    }
+    result = await latent_thoughts(
+        {"text": "abcde", "generations": 2, "max_document_tokens": 3}, LLM()
+    )
+    assert result == {
+        "megadoc": "a<think>thought</think>b<think>thought</think>c",
+        "generations": 2,
+        "source_truncated": True,
     }
 
 

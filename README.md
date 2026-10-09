@@ -36,10 +36,11 @@ simplescale.harnesses.megadocs:latent_thoughts
 Both consume DCLM records directly (`text` and, normally, `id`), avoiding a
 second copied input manifest. Set `generations` per task (default 1);
 `sampling_params` may override temperature, output length, or other SGLang
-options. Rephrasing returns only the independent articles. Latent thoughts
+options. Rephrasing returns the independent articles. Latent thoughts
 splits the document into `G+1` equal-token pieces with SGLang's own tokenizer
 and necessarily embeds the source in the assembled `<think>...</think>`
-megadoc. Use a worker context length large enough for the untruncated source.
+megadoc. Set `max_document_tokens` to truncate an overlong source before
+prompting or splitting; each result records this as `source_truncated`.
 For one setting across an existing manifest, use a tiny wrapper rather than
 rewriting the data:
 
@@ -59,7 +60,31 @@ fields are overlaid on the loaded record:
 
 Build one with `python scripts/build_manifest.py RAW OUT --rows N`; generation
 count defaults to `--generations 1`, and sampling parameters default to
-`--sampling-params '{"temperature":1.0}'`.
+`--sampling-params '{"temperature":1.0}'`. For a 65,536-token worker context
+and up to 2,048 output tokens, add `--max-document-tokens 62000`.
+
+## Export aligned pretraining splits
+
+Convert the DCLM source and its 2B and 27B rephrases into pretraining JSONL
+shards with:
+
+```bash
+.venv/bin/python scripts/export_rewrite_splits.py --num-chunks 16
+```
+
+By default this writes `dclm_15m`, `qwen35_2b_rephrase`, and
+`qwen35_27b_rephrase` under `../assets/data/rewrite_splits`. The original DCLM
+order was already shuffled, so the exporter does not shuffle it again. Instead,
+it deals every aligned triplet round-robin into the output shards.
+
+**Alignment is a hard invariant.** For global input row `k`, all three variants
+are written to shard `k % num_chunks` at position `k // num_chunks`. Before a
+row is written, the exporter requires the original `id` and both rewrite
+`task_id` values to match. Any mismatch, missing row, extra row, or non-single
+rewrite aborts the export and removes its temporary output. The final directory
+is published atomically only after every row passes, so a completed export
+guarantees that document `i` in shard `j` has its source and both rewrites at
+document `i` in shard `j`.
 
 ## Setup
 

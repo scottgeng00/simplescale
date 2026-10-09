@@ -43,6 +43,7 @@ def submit(args: argparse.Namespace) -> None:
     logs.mkdir(parents=True, exist_ok=True)
     manager_command = [
         "sbatch", "--parsable", f"--job-name={args.job_name}-manager",
+        *([f"--begin={args.begin}"] if args.begin else []),
         f"--chdir={repo}",
         f"--output={logs}/manager-%j.out", str(manager_script),
         str(repo / ".venv/bin/simplescale-manager"),
@@ -81,6 +82,7 @@ def submit(args: argparse.Namespace) -> None:
                 "sbatch",
                 "--parsable",
                 f"--job-name={args.job_name}-{qos}",
+                *([f"--begin={args.begin}"] if args.begin else []),
                 f"--qos={qos}",
                 f"--array=0-{count - 1}",
                 f"--gres=gpu:h200:{args.tp}",
@@ -118,6 +120,7 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--wandb-project")
     command.add_argument("--wandb-name")
     command.add_argument("--job-name", default="simplescale")
+    command.add_argument("--begin")
     command.add_argument("--repo", default=".")
     command.add_argument("--dry-run", action="store_true")
     command.set_defaults(run=submit)

@@ -12,12 +12,15 @@ def main() -> None:
     parser.add_argument("output", type=Path)
     parser.add_argument("--rows", type=int, required=True)
     parser.add_argument("--generations", type=int, default=1)
+    parser.add_argument("--max-document-tokens", type=int)
     parser.add_argument(
         "--sampling-params", type=json.loads, default={"temperature": 1.0}
     )
     args = parser.parse_args()
     if args.generations < 1:
         parser.error("--generations must be positive")
+    if args.max_document_tokens is not None and args.max_document_tokens < 1:
+        parser.error("--max-document-tokens must be positive")
     if not isinstance(args.sampling_params, dict):
         parser.error("--sampling-params must be a JSON object")
 
@@ -35,6 +38,8 @@ def main() -> None:
                 "generations": args.generations,
                 "sampling_params": args.sampling_params,
             }
+            if args.max_document_tokens is not None:
+                task["max_document_tokens"] = args.max_document_tokens
             manifest.write(json.dumps(task, separators=(",", ":")) + "\n")
             offset += len(line)
     os.replace(temporary, output)
