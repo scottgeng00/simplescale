@@ -121,3 +121,92 @@ work from dead workers to the queue; stale attempts cannot be accepted.
 Accepted shards are listed in `results/dataset.json`. `_SUCCESS` appears after
 every chunk is complete. The manager persists only an append-only completion
 journal, so a manager restart requeues unfinished work.
+
+## Setting up on a new cluster
+
+### Environment
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh        # if uv is missing
+uv sync --extra test --extra sglang --python /usr/bin/python3   # -> .venv, sglang==0.5.21 (pinned in uv.lock)
+.venv/bin/pytest -q
+```
+
+Run the CLI from the repo root (`--repo` defaults to the current directory). Workers import handlers
+from the repo `src/`, so harnesses in `src/simplescale/harnesses/` need no install step.
+
+### Cluster-specific values to change
+
+The Slurm resource shape is hard-coded for the H200 partition here:
+
+| Where | What |
+|---|---|
+| `src/simplescale/cli.py` | `CPUS_PER_NODE = 192`, `MEMORY_MB_PER_NODE = 1_992_294` (scaled by `--tp / 8` per worker); worker sbatch uses `--gres=gpu:h200:{tp}` and `--qos=<pool>` (the partition is inferred from the QoS on this cluster, so no `--partition` is passed) |
+| `slurm/worker.sbatch` | `#SBATCH` defaults (`--partition=h200`, `--qos`, `--gres=gpu:h200:8`, ...), overridden by the CLI flags above. Per-job local caches: `TRITON_CACHE_DIR`, `TORCHINDUCTOR_CACHE_DIR`, `FLASHINFER_WORKSPACE_BASE` under `$SLURM_TMPDIR` (or `/tmp`) |
+| `slurm/manager.sbatch` | CPU manager job: `--partition=cpu --qos=cpu_lowest`, 4 CPUs, 16G, ~7 days |
+
+Pools are passed as `--pool QOS=COUNT` (repeatable). Each pool becomes one worker job array of
+COUNT single-node workers on that QoS. Both sbatch scripts unset proxy variables. If you submit
+from a shell that has `http_proxy` set, also strip it from the `simplescale submit` environment.
+
+### Models
+
+`--model` takes a local model directory (it is `resolve()`d, so a symlink into the HF cache works).
+Our generators are `Qwen/Qwen3.5-{2B,9B,27B}`, downloaded to `assets/models/Qwen3.5-<SIZE>`. TP1 is
+enough for 2B/9B; we used TP2 for 27B. `--context-length` defaults to 16384; the Gacha harness needs
+32768.
+
+### Manifest format and handler contract
+
+- A manifest is JSONL with one task per line. A line is either the task itself, or a pointer
+  `{"_ref": {"path": ..., "offset": <byte offset>, "length": <bytes>}, ...overrides}`. The worker
+  `pread`s the referenced line, parses it, and overlays the other manifest fields on top
+  (`record | overrides`). `scripts/build_manifest.py` and lingua-clean's
+  `setup/build_dclm_rewrite_manifest.py` build pointer manifests over 16-chunk round-robin
+  subsets in row order, so output row j is the rewrite of source row j.
+- A handler is `async def fn(task: dict, llm) -> dict`. The returned value must be JSON-serializable.
+  Each output row is `{"task_id": task.get("id", <row index>), "result": <returned value>}`.
+- `llm` is a client for the worker's local SGLang server:
+  - `llm.generate(prompt=... | input_ids=..., sampling_params=...)` for raw `/generate`;
+  - `llm.chat(messages=..., sampling_params=...)` for OpenAI chat completions. Extra keys in
+    `sampling_params` (e.g. `reasoning_effort`, `response_format`) are passed through to the request;
+    `max_new_tokens` is mapped to `max_completion_tokens`;
+  - `llm.tokenize(text)` / `llm.detokenize([ids])`.
+- Results go to `<run-dir>/results/attempts/chunk-*.jsonl`. `results/dataset.json` lists accepted
+  shards, and `results/_SUCCESS` marks completion.
+
+### Rewrite harnesses
+
+- `simplescale.harnesses.rewrite:wiki`: the Megadocs/WRAP Wikipedia-style rephrase.
+- `simplescale.harnesses.rewrite:guided`: the FinePhrase guided rewrite.
+- `simplescale.harnesses.rewrite:nemotron`: Nemotron-CC prompts `diverse_qa` / `distill` /
+  `knowledge_list`, one rewrite per entry of `task["views"]`.
+- `simplescale.harnesses.rewrite:wofmt`: the wiki prompt retargeted to WebOrganizer formats; also one
+  rewrite per `task["views"]` entry.
+- `simplescale.harnesses.gacha:rewrite_wiki`: Gacha decoding on the wiki prompt, with JSON-schema
+  constrained planning turns and dice seeded by the doc id.
+
+All of them take DCLM records (`text`, `id`) plus task fields:
+- `generations` (wiki / guided / gacha);
+- `views` (nemotron / wofmt);
+- `sampling_params` (e.g. `{"temperature": 1.0, "max_new_tokens": 4096}`);
+- `max_document_tokens` (truncates the source first; recorded as `source_truncated`).
+
+The submission and export scripts live in lingua-clean: `setup/submit_dclm_rewrites.sh`,
+`setup/submit_dclm_multirewrites.sh`, `setup/prepare_dclm_rewrites.py` and
+`setup/prepare_dclm_multirewrites.py`.
+
+### Known issue: the sglang 0.5.21 JIT cache never hits
+
+sglang compiles small CUDA kernels at startup into a JIT cache, `~/.cache/sglang/jit` by default
+(`SGLANG_JIT_CACHE_DIR`). In 0.5.21 every cached build records its own deleted staging `cuda.cu`
+as a dependency, so no cached build ever validates. Every worker then rebuilds under one
+per-module `flock`. On a shared filesystem with hundreds of workers, this serializes startup:
+workers sit at "Capturing prefill shape ..." for 20+ minutes, hit `--startup-timeout`, and requeue.
+
+Fix it one of two ways:
+- set `export SGLANG_JIT_CACHE_DIR="${cache_root}/sglang_jit"` in `slurm/worker.sbatch` next to
+  the other per-job caches, so each worker compiles once locally (a few seconds per kernel);
+- or repair the shared cache in place with
+  `scripts/repair_sglang_jit_cache.py`. Check the
+  result on a GPU node, because login nodes without the CUDA toolkit always miss.
