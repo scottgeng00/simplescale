@@ -374,14 +374,13 @@ async def serve(args: argparse.Namespace) -> None:
     await site.start()
     host = args.advertise_host or socket.gethostbyname(socket.gethostname())
     endpoint = f"http://{host}:{int(runner.addresses[0][1])}"
-    _atomic_json(
-        state_dir / "discovery.json",
-        {
-            "endpoint": endpoint,
-            "epoch": uuid.uuid4().hex,
-            "token_file": str(token_path),
-        },
-    )
+    discovery_path = state_dir / "discovery.json"
+    discovery = {
+        "endpoint": endpoint,
+        "epoch": uuid.uuid4().hex,
+        "token_file": str(token_path),
+    }
+    _atomic_json(discovery_path, discovery)
     tracking = (
         asyncio.create_task(_track(queue, args, state_dir))
         if args.wandb_project
@@ -389,7 +388,10 @@ async def serve(args: argparse.Namespace) -> None:
     )
     print(f"manager ready at {endpoint}", flush=True)
     try:
-        await asyncio.Event().wait()
+        while not queue.status()["done"]:
+            await asyncio.sleep(1)
+        _atomic_json(discovery_path, {**discovery, "done": True})
+        await asyncio.sleep(max(0, args.shutdown_grace_seconds))
     finally:
         if tracking:
             tracking.cancel()
@@ -414,6 +416,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--wandb-project")
     parser.add_argument("--wandb-name")
     parser.add_argument("--wandb-interval", type=float, default=30)
+    parser.add_argument("--shutdown-grace-seconds", type=float, default=30)
     return parser
 
 

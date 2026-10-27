@@ -29,6 +29,13 @@ class LeaseClient:
         if self.session:
             await self.session.close()
 
+    @staticmethod
+    def finished(discovery_file: str | Path) -> bool:
+        try:
+            return bool(json.loads(Path(discovery_file).read_text()).get("done"))
+        except OSError:
+            return False
+
     def _manager(self) -> tuple[str, str]:
         discovery = json.loads(self.discovery_file.read_text())
         token = Path(discovery["token_file"]).read_text().strip()
@@ -54,6 +61,8 @@ class LeaseClient:
             return json.loads(body) if body else {}
 
     async def claim(self, worker_id: str) -> dict[str, Any]:
+        if self.finished(self.discovery_file):
+            return {"status": "done"}
         return await self._request("POST", "/v1/claim", {"worker_id": worker_id})
 
     async def heartbeat(self, chunk: int, attempt: str) -> None:

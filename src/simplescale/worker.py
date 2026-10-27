@@ -237,6 +237,9 @@ async def _run_lease(
 
 async def supervise(args: argparse.Namespace) -> int:
     handler = _load_handler(args.handler)
+    if LeaseClient.finished(args.discovery_file):
+        print("run already complete", flush=True)
+        return 0
     command = args.command or [
         str(Path(sys.executable).with_name("sglang")),
         "serve",

@@ -81,6 +81,8 @@ async def test_http_claim_complete(tmp_path):
             assert (await client.status())["done"]
             with pytest.raises(StaleLease):
                 await client.release(0, lease["attempt"])
+            discovery.write_text(json.dumps({"done": True}))
+            assert await client.claim("late-worker") == {"status": "done"}
     finally:
         await server.close()
         queue.close()
