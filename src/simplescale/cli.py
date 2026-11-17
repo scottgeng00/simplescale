@@ -74,8 +74,6 @@ def submit(args: argparse.Namespace) -> None:
         "--startup-timeout", str(args.startup_timeout),
         "--startup-attempts", str(args.startup_attempts),
     ]
-    if args.prefetch is not None:
-        worker.extend(["--prefetch", str(args.prefetch)])
     server_args = list(cluster.server_args) if args.server_arg is None else args.server_arg
     for extra in server_args:
         worker.append(f"--server-arg={extra}")
@@ -94,6 +92,7 @@ def submit(args: argparse.Namespace) -> None:
                 f"--chdir={repo}",
                 f"--output={logs}/worker-{qos}-%A_%a.out",
                 *worker,
+                "--prefetch", str(args.prefetch or cluster.prefetch(qos)),
             ],
             args.dry_run,
         )

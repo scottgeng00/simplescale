@@ -282,9 +282,7 @@ async def supervise(args: argparse.Namespace) -> int:
     worker_id = args.worker_id or "-".join(
         filter(None, [os.getenv("SLURM_JOB_ID"), os.getenv("SLURM_ARRAY_TASK_ID")])
     ) or f"worker-{os.getpid()}"
-    prefetch = args.prefetch or (
-        8 if os.getenv("SLURM_JOB_QOS") == "h200_dream_high" else 6
-    )
+    prefetch = args.prefetch or 6  # `simplescale submit` passes the cluster profile's value for the pool
     semaphore = asyncio.Semaphore(args.task_concurrency)
     active: set[asyncio.Task] = set()
     finished = False

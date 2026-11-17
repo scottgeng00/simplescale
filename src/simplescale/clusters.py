@@ -24,6 +24,8 @@ class Cluster:
     memory_mb_per_node: int  # requestable memory per full node; workers get tp / gpus_per_node of each
     gres: str  # GPU request for a TP-n worker, formatted with n
     default_pool: str  # QoS used when no --pool is given
+    high_pool: str | None = None  # higher-priority (rarely preempted) QoS; its workers prefetch more chunks
+    shared_pool: str | None = None  # preemptible bulk QoS for large worker pools; None: default_pool
     max_tp: int = 8
     account: str | None = None
     partition: str | None = None  # None: the site infers it (e.g. from the QoS)
@@ -32,6 +34,14 @@ class Cluster:
     names: tuple[str, ...] = ()  # Slurm ClusterName values
     gpu_types: tuple[str, ...] = ()  # GRES GPU types identifying the cluster when its name is unknown
     notes: str = field(default="", compare=False)
+
+    @property
+    def bulk_pool(self) -> str:
+        return self.shared_pool or self.default_pool
+
+    def prefetch(self, qos: str) -> int:
+        """Chunks a worker leases ahead: more on the high-priority pool, where workers are rarely preempted."""
+        return 8 if qos == self.high_pool else 6
 
     def worker_resources(self, tp: int) -> list[str]:
         if tp > min(self.max_tp, self.gpus_per_node):
@@ -55,6 +65,8 @@ CLUSTERS = {
             memory_mb_per_node=1_992_294,
             gres="gpu:h200:{n}",
             default_pool="h200_dream_high",
+            high_pool="h200_dream_high",
+            shared_pool="h200_comm_shared",
             manager=("--partition=cpu", "--qos=cpu_lowest"),
             gpu_types=("h200",),
             notes="original H200 cluster; the partition is inferred from the QoS",
@@ -66,6 +78,7 @@ CLUSTERS = {
             memory_mb_per_node=860_000,  # of 875,520 MB per node
             gres="gpu:{n}",
             default_pool="g3_comm_shared",
+            high_pool="g3_mnm_high",
             max_tp=4,
             account="mnm",
             partition="g3",
@@ -85,6 +98,7 @@ CLUSTERS = {
             gres="gpu:h100:{n}",
             # h100_mdf_lowest is the preemptible shared pool (1,024-GPU cap); scale/explore preempt it.
             default_pool="h100_mdf_lowest",
+            high_pool="h100_mdf_explore",
             account="dream",
             partition="h100_mdf",
             # No CPU partition: the GPU-less manager runs on h100_mdf at a QoS that lowest jobs cannot preempt.

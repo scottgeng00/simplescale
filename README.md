@@ -148,7 +148,9 @@ detection; it prints the profile it uses.
 | `h100-dm1` | `fair-cw-use1-1` (FAIR CW USE1-1, DM1) | 8x H100, 128 CPUs, x86_64 | `h100_mdf_lowest`, account `dream`, partition `h100_mdf` | GPU-less job on `h100_mdf` / `h100_mdf_scale` | none |
 
 A profile gives the account, partition, GRES string, per-node CPUs / memory (a TP-n worker gets n /
-GPUs-per-node of the node), default pool, manager placement and default extra `sglang serve` flags.
+GPUs-per-node of the node), default pool, high-priority pool (`h200_dream_high`, `g3_mnm_high`,
+`h100_mdf_explore`; its workers prefetch 8 chunks instead of 6), bulk pool for large preemptible worker
+pools (`h200_comm_shared` on H200, else the default pool; lingua-clean's rewrite submit scripts use it), manager placement and default extra `sglang serve` flags.
 `--server-arg` (repeatable) replaces the profile's server flags; `--server-arg ""` clears them.
 To add a cluster, add a `Cluster(...)` with its `ClusterName` and GPU type, and a case in
 `tests/test_clusters.py`.
