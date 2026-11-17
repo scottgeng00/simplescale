@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=simplescale-worker
-#SBATCH --partition=h200
-#SBATCH --qos=h200_dream_high
-#SBATCH --gres=gpu:h200:8
-#SBATCH --cpus-per-task=192
-#SBATCH --mem=1992294M
+#SBATCH --account=mnm
+#SBATCH --partition=g3
+#SBATCH --qos=g3_comm_shared
+#SBATCH --gres=gpu:4
+#SBATCH --cpus-per-task=144
+#SBATCH --mem=860000M
 #SBATCH --time=2-00:00:00
 #SBATCH --requeue
 #SBATCH --signal=B:USR1@300
@@ -17,6 +18,15 @@ cache_root="${SLURM_TMPDIR:-/tmp}/simplescale-${SLURM_JOB_ID}-${SLURM_ARRAY_TASK
 export TRITON_CACHE_DIR="${cache_root}/triton"
 export TORCHINDUCTOR_CACHE_DIR="${cache_root}/torchinductor"
 export FLASHINFER_WORKSPACE_BASE="${cache_root}/flashinfer"
+export SGLANG_JIT_CACHE_DIR="${cache_root}/sglang_jit"  # the shared 0.5.21 JIT cache never hits (README)
+# The venv runs on the system python3.12, which has no dev headers; Triton JIT needs Python.h.
+export CPATH="/home/sgeng/.local/share/uv/python/cpython-3.12.15-linux-aarch64-gnu/include/python3.12${CPATH:+:${CPATH}}"
+# SGLang JIT kernels build with ninja + nvcc from the venv (no system CUDA toolkit; jobs run with --chdir=<repo>).
+export CUDA_HOME="${PWD}/.venv/lib/python3.12/site-packages/nvidia/cu13"
+export PATH="${PWD}/.venv/bin:${CUDA_HOME}/bin:${PATH}"
+# The wheel ships only libcudart.so.13; .venv/cuda_link/libcudart.so links to it for -lcudart.
+export LIBRARY_PATH="${PWD}/.venv/cuda_link:${CUDA_HOME}/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}"
+export LD_LIBRARY_PATH="${CUDA_HOME}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 mkdir -p "${TRITON_CACHE_DIR}" "${TORCHINDUCTOR_CACHE_DIR}" "${FLASHINFER_WORKSPACE_BASE}"
 
 drain_worker() {

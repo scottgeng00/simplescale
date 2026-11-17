@@ -8,6 +8,7 @@ import importlib
 import inspect
 import json
 import os
+import shlex
 import signal
 import sys
 import uuid
@@ -260,6 +261,9 @@ async def supervise(args: argparse.Namespace) -> int:
         command.extend(["--load-format", args.load_format])
     if not args.command and args.skip_tokenizer_init:
         command.append("--skip-tokenizer-init")
+    if not args.command:
+        for extra in args.server_arg:
+            command.extend(shlex.split(extra))
     stopping = asyncio.Event()
     draining = asyncio.Event()
 
@@ -370,6 +374,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--startup-attempts", type=int, default=2)
     parser.add_argument("--load-format")
     parser.add_argument("--skip-tokenizer-init", action="store_true")
+    parser.add_argument("--server-arg", action="append", default=[], help="extra sglang serve args, e.g. '--sampling-backend pytorch'")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     return parser
 

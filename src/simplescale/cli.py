@@ -5,8 +5,10 @@ import shlex
 import subprocess
 from pathlib import Path
 
-CPUS_PER_NODE = 192
-MEMORY_MB_PER_NODE = 1_992_294
+# GB300 partition g3: 4 GPUs / 144 CPUs / 875,520 MB per node (860,000 MB requestable).
+GPUS_PER_NODE = 4
+CPUS_PER_NODE = 144
+MEMORY_MB_PER_NODE = 860_000
 
 
 def _tp(value: str) -> int:
@@ -74,9 +76,11 @@ def submit(args: argparse.Namespace) -> None:
     ]
     if args.prefetch is not None:
         worker.extend(["--prefetch", str(args.prefetch)])
-    cpus = CPUS_PER_NODE * args.tp // 8
-    memory = MEMORY_MB_PER_NODE * args.tp // 8
-    for qos, count in args.pool or [("h200_dream_high", 1)]:
+    for extra in args.server_arg:
+        worker.append(f"--server-arg={extra}")
+    cpus = CPUS_PER_NODE * args.tp // GPUS_PER_NODE
+    memory = MEMORY_MB_PER_NODE * args.tp // GPUS_PER_NODE
+    for qos, count in args.pool or [("g3_comm_shared", 1)]:
         job = _submit(
             [
                 "sbatch",
@@ -85,7 +89,7 @@ def submit(args: argparse.Namespace) -> None:
                 *([f"--begin={args.begin}"] if args.begin else []),
                 f"--qos={qos}",
                 f"--array=0-{count - 1}",
-                f"--gres=gpu:h200:{args.tp}",
+                f"--gres=gpu:{args.tp}",
                 f"--cpus-per-task={cpus}",
                 f"--mem={memory}M",
                 f"--time={args.worker_time}",
@@ -109,6 +113,7 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--pool", action="append", type=_pool, metavar="QOS=COUNT")
     command.add_argument("--tp", type=_tp, default=8)
     command.add_argument("--chunk-size", type=int, default=64)
+    command.add_argument("--server-arg", action="append", default=[], help="extra sglang serve args for workers")
     command.add_argument("--start-workers", type=int, default=1)
     command.add_argument("--max-documents", type=int)
     command.add_argument("--context-length", type=int, default=16384)

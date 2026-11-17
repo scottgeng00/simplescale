@@ -123,6 +123,19 @@ def _option(value: Any) -> str:
     return value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
 
 
+QUESTION = {"type": "object", "properties": {"name": {"type": "string"}, "ask": {"type": "string"}},
+            "required": ["name", "ask"], "additionalProperties": False}
+
+
+def _list_schema(key: str, min_items: int, max_items: int | None = None,
+                 items: dict | None = None) -> dict[str, Any]:
+    """JSON schema for one planning turn's reply, used when the task sets ``planning_json_schema``."""
+    array = {"type": "array", "minItems": min_items, "items": items or {"type": "string"}}
+    if max_items is not None:
+        array["maxItems"] = max_items
+    return {"type": "object", "properties": {key: array}, "required": [key], "additionalProperties": False}
+
+
 async def _sample(
     task: dict[str, Any], llm: Any, config: dict[str, Any], rng: random.Random
 ) -> dict[str, Any]:
@@ -133,8 +146,12 @@ async def _sample(
     prompt = _prompt(task)
     used = {"tokens": 0}
 
-    async def ask(messages: list[dict[str, str]], final: bool = False) -> str:
-        response = await llm.chat(messages=messages, sampling_params=params if final else planning)
+    async def ask(messages: list[dict[str, str]], final: bool = False, schema: dict | None = None) -> str:
+        sampling = params if final else planning
+        if schema is not None and task.get("planning_json_schema"):
+            sampling = {**sampling, "response_format": {
+                "type": "json_schema", "json_schema": {"name": "gacha", "schema": schema}}}
+        response = await llm.chat(messages=messages, sampling_params=sampling)
         used["tokens"] += (response.get("usage") or {}).get("completion_tokens", 0)
         return _content(response)
 
@@ -147,7 +164,7 @@ async def _sample(
                 rules=RULES if config.get("rules", True) else "",
                 task=prompt,
             ),
-        }])
+        }], schema=_list_schema("questions", config["decisions"], config["decisions"], QUESTION))
         axes = [
             q for q in _json(reply, "questions")
             if isinstance(q, dict) and q.get("name") and q.get("ask")
@@ -162,7 +179,8 @@ async def _sample(
     for axis in axes:
         turn = prefix + DECISION.format(ask=axis["ask"], m=config["options"])
         try:
-            reply = await ask([*messages, {"role": "user", "content": turn}])
+            reply = await ask([*messages, {"role": "user", "content": turn}],
+                              schema=_list_schema("options", config["options"]))
             options = [_option(o) for o in _json(reply, "options")]
         except Exception:
             continue
@@ -177,7 +195,7 @@ async def _sample(
     idea = None
     turn = prefix + IDEA.format(k=config["ideas"], task=prompt)
     try:
-        reply = await ask([*messages, {"role": "user", "content": turn}])
+        reply = await ask([*messages, {"role": "user", "content": turn}], schema=_list_schema("options", 1))
         idea = rng.choice([_option(o) for o in _json(reply, "options")])
     except Exception:
         pass
@@ -291,3 +309,32 @@ async def rewrite_wiki(task: dict[str, Any], llm: Any) -> dict[str, Any]:
                    "idea": s["idea"], "generated_tokens": s["generated_tokens"]} for s in samples],
         "source_truncated": truncated,
     }
+
+
+# Jacqueline's rewrite_big/rewrite_big2 setup for `_ref` manifests over raw DCLM records: the source is
+# stripped and capped at 6,000 chars on a word boundary, wrapped in the bare rewrite prompt, and run with
+# the rephrase preset. Manifest rows carry generations, sampling_params, and (Gacha) seed and
+# planning_sampling_params.
+REWRITE_DOC = "Rewrite the following document.\n\n<document>\n{text}\n</document>"
+
+
+def _rewrite_task(task: dict[str, Any]) -> dict[str, Any]:
+    text = task["text"].strip()
+    if len(text) > 6000:
+        text = text[:6000].rsplit(" ", 1)[0]
+    return {**task, "prompt": REWRITE_DOC.format(text=text), "domain": "rephrase"}
+
+
+async def rewrite_doc_schema(task: dict[str, Any], llm: Any) -> dict[str, list[dict[str, Any]]]:
+    """``rewrite_doc`` with JSON-schema constrained planning turns: exactly T questions, at least m options per
+    axis, a non-empty idea list. Qwen3.5-9B otherwise plans fewer than 4 axes or breaks the JSON in most samples
+    (smoke test: 4 axes in 24% of samples, no idea in 19%; Qwen3.5-27B unconstrained: 99.6% and <1%)."""
+    return await generate(_rewrite_task(task) | {"planning_json_schema": True}, llm)
+
+
+async def rewrite_doc(task: dict[str, Any], llm: Any) -> dict[str, list[dict[str, Any]]]:
+    return await generate(_rewrite_task(task), llm)
+
+
+async def rewrite_doc_direct(task: dict[str, Any], llm: Any) -> dict[str, list[dict[str, Any]]]:
+    return await direct(_rewrite_task(task), llm)
