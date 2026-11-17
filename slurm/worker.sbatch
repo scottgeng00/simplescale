@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=simplescale-worker
-#SBATCH --account=mnm
-#SBATCH --partition=g3
-#SBATCH --qos=g3_comm_shared
-#SBATCH --gres=gpu:4
-#SBATCH --cpus-per-task=144
-#SBATCH --mem=860000M
+# Account / partition / QoS / GPUs / CPUs / memory come from the cluster profile (simplescale/clusters.py).
 #SBATCH --time=2-00:00:00
 #SBATCH --requeue
 #SBATCH --signal=B:USR1@300
@@ -19,14 +14,31 @@ export TRITON_CACHE_DIR="${cache_root}/triton"
 export TORCHINDUCTOR_CACHE_DIR="${cache_root}/torchinductor"
 export FLASHINFER_WORKSPACE_BASE="${cache_root}/flashinfer"
 export SGLANG_JIT_CACHE_DIR="${cache_root}/sglang_jit"  # the shared 0.5.21 JIT cache never hits (README)
-# The venv runs on the system python3.12, which has no dev headers; Triton JIT needs Python.h.
-export CPATH="/home/sgeng/.local/share/uv/python/cpython-3.12.15-linux-aarch64-gnu/include/python3.12${CPATH:+:${CPATH}}"
-# SGLang JIT kernels build with ninja + nvcc from the venv (no system CUDA toolkit; jobs run with --chdir=<repo>).
-export CUDA_HOME="${PWD}/.venv/lib/python3.12/site-packages/nvidia/cu13"
-export PATH="${PWD}/.venv/bin:${CUDA_HOME}/bin:${PATH}"
-# The wheel ships only libcudart.so.13; .venv/cuda_link/libcudart.so links to it for -lcudart.
-export LIBRARY_PATH="${PWD}/.venv/cuda_link:${CUDA_HOME}/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}"
-export LD_LIBRARY_PATH="${CUDA_HOME}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+# Toolchain for the Triton / SGLang / FlashInfer JIT, detected on the node (jobs run with --chdir=<repo>):
+# - Triton compiles against Python.h; a venv on a header-less system Python borrows a uv CPython's headers.
+python_include="$(.venv/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["include"])')"
+if [[ ! -f "${python_include}/Python.h" ]]; then
+  version="$(.venv/bin/python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+  for include in "${HOME}"/.local/share/uv/python/cpython-"${version}".*-"$(uname -m)"-*/include/python"${version}"; do
+    [[ -f "${include}/Python.h" ]] && export CPATH="${include}${CPATH:+:${CPATH}}" && break
+  done
+fi
+# - Without a system CUDA toolkit, use nvcc / headers / libcudart from the venv's nvidia wheels (+ ninja from the venv).
+#   The wheel ships only libcudart.so.<major>; a per-job directory provides libcudart.so for -lcudart.
+export PATH="${PWD}/.venv/bin:${PATH}"
+if ! command -v nvcc >/dev/null; then
+  for cuda in .venv/lib/python3*/site-packages/nvidia/cu1[0-9]; do
+    if [[ -x "${cuda}/bin/nvcc" ]]; then
+      export CUDA_HOME="${PWD}/${cuda}"
+      mkdir -p "${cache_root}/cuda_link"
+      ln -sf "$(ls "${CUDA_HOME}"/lib/libcudart.so.* | head -1)" "${cache_root}/cuda_link/libcudart.so"
+      export PATH="${CUDA_HOME}/bin:${PATH}"
+      export LIBRARY_PATH="${cache_root}/cuda_link:${CUDA_HOME}/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}"
+      export LD_LIBRARY_PATH="${CUDA_HOME}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+      break
+    fi
+  done
+fi
 mkdir -p "${TRITON_CACHE_DIR}" "${TORCHINDUCTOR_CACHE_DIR}" "${FLASHINFER_WORKSPACE_BASE}"
 
 drain_worker() {

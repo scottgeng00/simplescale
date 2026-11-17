@@ -135,15 +135,33 @@ uv sync --extra test --extra sglang --python /usr/bin/python3   # -> .venv, sgla
 Run the CLI from the repo root (`--repo` defaults to the current directory). Workers import handlers
 from the repo `src/`, so harnesses in `src/simplescale/harnesses/` need no install step.
 
-### Cluster-specific values to change
+### Cluster profiles
 
-The Slurm resource shape is hard-coded for the H200 partition here:
+`simplescale submit` picks a profile from `src/simplescale/clusters.py`: by Slurm's `ClusterName`
+(`$SLURM_CLUSTER_NAME`), else by the GPU type in the partitions' GRES. `--cluster NAME` overrides
+detection; it prints the profile it uses.
 
-| Where | What |
-|---|---|
-| `src/simplescale/cli.py` | `CPUS_PER_NODE = 192`, `MEMORY_MB_PER_NODE = 1_992_294` (scaled by `--tp / 8` per worker); worker sbatch uses `--gres=gpu:h200:{tp}` and `--qos=<pool>` (the partition is inferred from the QoS on this cluster, so no `--partition` is passed) |
-| `slurm/worker.sbatch` | `#SBATCH` defaults (`--partition=h200`, `--qos`, `--gres=gpu:h200:8`, ...), overridden by the CLI flags above. Per-job local caches: `TRITON_CACHE_DIR`, `TORCHINDUCTOR_CACHE_DIR`, `FLASHINFER_WORKSPACE_BASE` under `$SLURM_TMPDIR` (or `/tmp`) |
-| `slurm/manager.sbatch` | CPU manager job: `--partition=cpu --qos=cpu_lowest`, 4 CPUs, 16G, ~7 days |
+| Profile | Cluster | Node | Default pool | Manager | Default server args |
+|---|---|---|---|---|---|
+| `h200` | original H200 cluster (detected by GRES `h200`) | 8x H200, 192 CPUs, x86_64 | `h200_dream_high` (partition inferred from QoS) | `--partition=cpu --qos=cpu_lowest` | none |
+| `gb300-dalton` | `fair-cw-use2-3` (FAIR CW USE2-3, Dalton) | 4x GB300, 144 CPUs, aarch64 | `g3_comm_shared`, account `mnm`, partition `g3` | GPU-less job on `g3` / `g3_comm_shared` | `--sampling-backend pytorch` |
+| `h100-dm1` | `fair-cw-use1-1` (FAIR CW USE1-1, DM1) | 8x H100, 128 CPUs, x86_64 | `h100_mdf_lowest`, account `dream`, partition `h100_mdf` | GPU-less job on `h100_mdf` / `h100_mdf_scale` | none |
+
+A profile gives the account, partition, GRES string, per-node CPUs / memory (a TP-n worker gets n /
+GPUs-per-node of the node), default pool, manager placement and default extra `sglang serve` flags.
+`--server-arg` (repeatable) replaces the profile's server flags; `--server-arg ""` clears them.
+To add a cluster, add a `Cluster(...)` with its `ClusterName` and GPU type, and a case in
+`tests/test_clusters.py`.
+
+Toolchain differences are handled on the node by `slurm/worker.sbatch`, not by the profile:
+- if the venv's Python has no `Python.h` (venv on a system Python without dev headers), it uses the
+  headers of the matching uv-managed CPython (`~/.local/share/uv/python/cpython-<ver>.*-<arch>-*`);
+- if no `nvcc` is on `PATH` (no system CUDA toolkit), it uses nvcc / headers / libcudart from the
+  venv's `nvidia/cu1x` wheel, with a per-job `libcudart.so` link for `-lcudart`, and ninja from the venv.
+
+Per-job local caches (`TRITON_CACHE_DIR`, `TORCHINDUCTOR_CACHE_DIR`, `FLASHINFER_WORKSPACE_BASE`,
+`SGLANG_JIT_CACHE_DIR`) live under `$SLURM_TMPDIR` (or `/tmp`). The venv is per architecture: build
+one with `uv sync` on each cluster (aarch64 on Dalton, x86_64 on DM1 / H200).
 
 Pools are passed as `--pool QOS=COUNT` (repeatable). Each pool becomes one worker job array of
 COUNT single-node workers on that QoS. Both sbatch scripts unset proxy variables. If you submit
@@ -204,9 +222,7 @@ as a dependency, so no cached build ever validates. Every worker then rebuilds u
 per-module `flock`. On a shared filesystem with hundreds of workers, this serializes startup:
 workers sit at "Capturing prefill shape ..." for 20+ minutes, hit `--startup-timeout`, and requeue.
 
-Fix it one of two ways:
-- set `export SGLANG_JIT_CACHE_DIR="${cache_root}/sglang_jit"` in `slurm/worker.sbatch` next to
-  the other per-job caches, so each worker compiles once locally (a few seconds per kernel);
-- or repair the shared cache in place with
-  `scripts/repair_sglang_jit_cache.py`. Check the
-  result on a GPU node, because login nodes without the CUDA toolkit always miss.
+`slurm/worker.sbatch` now sets `SGLANG_JIT_CACHE_DIR` to a per-job directory, so each worker
+compiles once locally (a few seconds per kernel). Alternatively, repair the shared cache in place with
+`scripts/repair_sglang_jit_cache.py`. Check the
+result on a GPU node, because login nodes without the CUDA toolkit always miss.

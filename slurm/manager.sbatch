@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=simplescale-manager
-#SBATCH --account=mnm
-#SBATCH --partition=g3
-#SBATCH --qos=g3_comm_shared
+# Account / partition / QoS come from the cluster profile (simplescale/clusters.py) via `simplescale submit`.
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 #SBATCH --time=6-23:00:00

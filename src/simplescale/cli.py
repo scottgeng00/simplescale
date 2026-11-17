@@ -5,10 +5,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
-# GB300 partition g3: 4 GPUs / 144 CPUs / 875,520 MB per node (860,000 MB requestable).
-GPUS_PER_NODE = 4
-CPUS_PER_NODE = 144
-MEMORY_MB_PER_NODE = 860_000
+from .clusters import detect
 
 
 def _tp(value: str) -> int:
@@ -40,12 +37,15 @@ def submit(args: argparse.Namespace) -> None:
     manager_script, worker_script = repo / "slurm/manager.sbatch", repo / "slurm/worker.sbatch"
     if not manager_script.exists() or not worker_script.exists():
         raise SystemExit(f"Slurm scripts not found under {repo}")
+    cluster = detect(args.cluster)
+    print(f"cluster {cluster.name}" + (f" ({cluster.notes})" if cluster.notes else ""))
     run = Path(args.run_dir).resolve()
     results, state, logs = run / "results", run / "state", run / "logs"
     logs.mkdir(parents=True, exist_ok=True)
     manager_command = [
         "sbatch", "--parsable", f"--job-name={args.job_name}-manager",
         *([f"--begin={args.begin}"] if args.begin else []),
+        *cluster.manager,
         f"--chdir={repo}",
         f"--output={logs}/manager-%j.out", str(manager_script),
         str(repo / ".venv/bin/simplescale-manager"),
@@ -76,11 +76,11 @@ def submit(args: argparse.Namespace) -> None:
     ]
     if args.prefetch is not None:
         worker.extend(["--prefetch", str(args.prefetch)])
-    for extra in args.server_arg:
+    server_args = list(cluster.server_args) if args.server_arg is None else args.server_arg
+    for extra in server_args:
         worker.append(f"--server-arg={extra}")
-    cpus = CPUS_PER_NODE * args.tp // GPUS_PER_NODE
-    memory = MEMORY_MB_PER_NODE * args.tp // GPUS_PER_NODE
-    for qos, count in args.pool or [("g3_comm_shared", 1)]:
+    resources = cluster.worker_resources(args.tp)
+    for qos, count in args.pool or [(cluster.default_pool, 1)]:
         job = _submit(
             [
                 "sbatch",
@@ -89,9 +89,7 @@ def submit(args: argparse.Namespace) -> None:
                 *([f"--begin={args.begin}"] if args.begin else []),
                 f"--qos={qos}",
                 f"--array=0-{count - 1}",
-                f"--gres=gpu:{args.tp}",
-                f"--cpus-per-task={cpus}",
-                f"--mem={memory}M",
+                *resources,
                 f"--time={args.worker_time}",
                 f"--chdir={repo}",
                 f"--output={logs}/worker-{qos}-%A_%a.out",
@@ -113,7 +111,9 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--pool", action="append", type=_pool, metavar="QOS=COUNT")
     command.add_argument("--tp", type=_tp, default=8)
     command.add_argument("--chunk-size", type=int, default=64)
-    command.add_argument("--server-arg", action="append", default=[], help="extra sglang serve args for workers")
+    command.add_argument("--server-arg", action="append",
+                         help="extra `sglang serve` args for workers (replaces the cluster profile's defaults)")
+    command.add_argument("--cluster", help="cluster profile (simplescale/clusters.py); default: auto-detect")
     command.add_argument("--start-workers", type=int, default=1)
     command.add_argument("--max-documents", type=int)
     command.add_argument("--context-length", type=int, default=16384)
