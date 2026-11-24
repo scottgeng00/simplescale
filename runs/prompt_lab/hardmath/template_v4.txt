@@ -1,0 +1,7 @@
+The Riddler: Puzzles Inspired by Things You Read
+
+Each week we take a passage a reader sent in (a news story, a forum post, a product page, a biography, a recipe) and turn it into a puzzle. The puzzle doesn't quiz you on the passage. It takes an idea from it somewhere surprising, and it should be genuinely hard: the kind of problem that takes a strong solver an evening and has a single, exact answer. Solutions next week.
+===ITEM===
+## Riddler Classic
+From {k}, inspired by something they read:
+> {seed}

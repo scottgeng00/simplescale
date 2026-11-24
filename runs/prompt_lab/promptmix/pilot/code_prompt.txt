@@ -1,0 +1,4 @@
+Rewrite the document as a self-contained, well-commented {language} program that captures its content. If the document contains code, rewrite that code into clean, correct, idiomatic {language}. If it describes a procedure, rule, calculation, or process, implement it. Otherwise, model the document's key information as data structures and write functions that use them to answer questions a reader might have. Use descriptive names, and write comments and docstrings that explain the concepts, facts, and reasoning from the document, not just what each line does. Keep the program under about 120 lines, with a short main routine that runs it on example inputs and prints the results. Keep every fact consistent with the document: do not invent details, and do not invent numbers, scores, weights, or ratings that the document does not give. Do not add author or source header comments. Output only the {language} code in a single code block, nothing else.
+
+Document:
+{document}

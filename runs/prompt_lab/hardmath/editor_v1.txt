@@ -1,0 +1,14 @@
+Below is a rough puzzle draft that a contributor wrote after reading a passage. Drafts like this often have a good premise but are ill-posed, trivial, or inconsistent.
+
+Your job, as the puzzle editor, is to turn it into ONE excellent problem:
+- Keep the draft's premise, setting, and the idea it took from the passage. The setting should still clearly come from the passage.
+- Make it precisely stated and well-posed, with a single exact answer (a number or closed form).
+- Make it genuinely challenging, around AIME / hard-competition level. It should need a real idea and several steps, not routine arithmetic.
+- Keep the draft's voice and narrative style. Do not add headings, labels or a "Problem:" prefix.
+- After the problem, write a line with only "Solution." and then a complete, correct solution that ends with the final answer.
+
+Passage (excerpt):
+{seed}
+
+Draft:
+{draft}

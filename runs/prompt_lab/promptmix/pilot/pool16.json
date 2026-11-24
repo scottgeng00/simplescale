@@ -1,0 +1,63 @@
+{
+ "new_prompts": {
+  "diverse_qa": "Rewrite the document as a set of diverse questions and answers about its content. Mix question types in varied order: yes/no, open-ended what, how, and why questions, multiple-choice questions with the options included, comparison questions, and problem-solving questions where the content supports them. Do not label the question types. Ask only questions whose answers are stated or directly implied by the content, focusing on important knowledge and concrete details. For multiple-choice questions, give distinct options with exactly one correct answer. Each question and answer must make sense to someone who has never seen the document. Ignore website boilerplate such as ads, navigation, subscription offers, contact details, image credits, and comments. Present opinions and claims as belonging to whoever makes them, treat fiction and satire as such, and do not answer questions the document leaves unanswered. Write as general knowledge that stands on its own, without referring to \"the document\", \"the text\", \"the article\", \"the author\", or \"the source\". Format each pair as \"Question:\" followed by \"Answer:\". Output only the questions and answers, nothing else.",
+  "knowledge_list": "Rewrite the document as a concise list of the factual information, concrete details, key concepts, and important numbers it contains. Use a plain hyphen bullet for every point, with no headings, bold labels, or sub-bullets. Each point should be clear, specific, and self-contained. Group related points together and order them logically rather than in the document's order. Double-check every date, number, and name against the document. Ignore website boilerplate such as ads, navigation, subscription offers, contact details, image credits, and comments. Present opinions and claims as belonging to whoever makes them, treat fiction and satire as such, and do not answer questions the document leaves unanswered. Write as general knowledge that stands on its own, without referring to \"the document\", \"the text\", \"the article\", \"the author\", or \"the source\". Output only the list, nothing else.",
+  "explanation": "Rewrite the document to provide clear scientific or logical explanations for concepts, phenomena, or processes mentioned in it. Make implicit reasoning explicit by explaining why things work the way they do, what principles or mechanisms are at play, and how different factors relate to each other. Use only well-established mechanisms and principles; do not invent numbers, names, studies, or technical details. If the material is fiction, satire, or opinion, explain the reasoning within it on its own terms rather than adding real-world science. Write plain prose without a title or headings. Ignore website boilerplate such as ads, navigation, subscription offers, contact details, image credits, and comments. Present opinions and claims as belonging to whoever makes them, treat fiction and satire as such, and do not answer questions the document leaves unanswered. Write as general knowledge that stands on its own, without referring to \"the document\", \"the text\", \"the article\", \"the author\", or \"the source\". Output only the explanatory text, nothing else.",
+  "forum_thread": "Rewrite the document as an online forum thread in which several users discuss its topic. Start with an opening post that asks a question or raises a point, followed by replies from users with different levels of knowledge and different opinions, including accurate corrections, follow-up questions, and some disagreement. Vary the length of posts, from one-line replies to longer explanations, and give each user a distinctive voice. Users speak from their own knowledge and experience and never mention an article, document, text, post, author, or prompt. If the document promotes a business, users discuss the topic rather than the business. Do not add facts that are not in the document. Format each post as a realistic, distinctive username followed by a colon, with no thread title, bold text, or placeholder names such as user1. Ignore website boilerplate such as ads, navigation, subscription offers, contact details, image credits, and comments. Present opinions and claims as belonging to whoever makes them, treat fiction and satire as such, and do not answer questions the document leaves unanswered. Write as general knowledge that stands on its own, without referring to \"the document\", \"the text\", \"the article\", \"the author\", or \"the source\". Output only the thread, nothing else.",
+  "entity_focus": "Choose an entity that is discussed in the document but is not its main subject, such as a person, place, organization, object, or concept, and rewrite the material centered on that entity. Describe it, then bring in the rest of the material only as it relates to it. Write in the third person, and keep every name, place, date, and number attached to what it describes in the original. Do not add facts that are not in the document, and write plain prose without a title or headings. Ignore website boilerplate such as ads, navigation, subscription offers, contact details, image credits, and comments. Present opinions and claims as belonging to whoever makes them, treat fiction and satire as such, and do not answer questions the document leaves unanswered. Write as general knowledge that stands on its own, without referring to \"the document\", \"the text\", \"the article\", \"the author\", or \"the source\". Output only the rewritten text, nothing else.",
+  "persona": "Rewrite the document as if you were {persona} writing for {audience}. Keep the key facts and ideas, but reorganize the material and choose the content, structure, vocabulary, and tone that this writer would naturally use for this audience, rather than following the document paragraph by paragraph. Never present the document's reporting, research, or experiences as your own; attribute them to their original authors. Do not open by greeting or naming the audience, do not use emojis, and do not add facts that are not in the document. Ignore website boilerplate such as ads, navigation, subscription offers, contact details, image credits, and comments. Present opinions and claims as belonging to whoever makes them, treat fiction and satire as such, and do not answer questions the document leaves unanswered. Write as general knowledge that stands on its own, without referring to \"the document\", \"the text\", \"the article\", \"the author\", or \"the source\". Output only the rewritten text, nothing else.",
+  "code": "Rewrite the document as a self-contained, well-commented {language} program that captures its content. If the document contains code, rewrite that code into clean, correct, idiomatic {language}. If it describes a procedure, rule, calculation, or process, implement it. Otherwise, store the document's key information in data structures and write functions that compute or look up answers to questions a reader might have, rather than long sequences of print statements. Write comments and docstrings that explain the concepts, facts, and reasoning, not just what each line does. The program must compile and run as is: include every import or header and define every name you use; C means standard C99 (not C++), and Java means a single public class named Main with a main method. Keep it under about 120 lines, with a short main routine that runs it on example inputs and prints the results. Do not invent numbers, scores, weights, thresholds, or ratings that the document does not give; use categories or booleans instead. Do not add author or source header comments. Ignore website boilerplate such as ads, navigation, subscription offers, contact details, image credits, and comments. Present opinions and claims as belonging to whoever makes them, treat fiction and satire as such, and do not answer questions the document leaves unanswered. Write as general knowledge that stands on its own, without referring to \"the document\", \"the text\", \"the article\", \"the author\", or \"the source\". Output only the {language} code in a single code block, nothing else.",
+  "code_problem": "Rewrite the document to create a programming problem based on the information, processes, or relationships in it, then solve it in {language}. Use only entities and values that appear in the document as data; never invent thresholds, scores, weights, or rules. If the document has no natural computation, use a simple data-processing task over its facts, such as searching, sorting, grouping, or counting. State the problem so that it is self-contained, in at most about 200 words, including the input and output format and one example input. Then explain the approach briefly and give a complete, correct, commented solution of at most about 60 lines that compiles and runs as is (C means standard C99, not C++; Java means a single public class named Main). Finally, give the exact output the solution prints for the example input, after tracing it carefully. Present only the final problem and solution, without drafts or second thoughts. Ignore website boilerplate such as ads, navigation, subscription offers, contact details, image credits, and comments. Present opinions and claims as belonging to whoever makes them, treat fiction and satire as such, and do not answer questions the document leaves unanswered. Write as general knowledge that stands on its own, without referring to \"the document\", \"the text\", \"the article\", \"the author\", or \"the source\". Output only the problem and solution, nothing else."
+ },
+ "slots": {
+  "language": [
+   "Python",
+   "C",
+   "Java"
+  ],
+  "persona": [
+   "a high school science teacher",
+   "a skeptical investigative journalist",
+   "an enthusiastic hobbyist blogger",
+   "a seasoned practitioner in the field",
+   "a historian looking back decades later"
+  ],
+  "audience": [
+   "curious ten-year-olds",
+   "an interested professional who wants to hear all the extra details and complications",
+   "university students preparing for an exam",
+   "skeptics who doubt the topic matters",
+   "an expert from a different field encountering this topic for the first time"
+  ]
+ },
+ "thinking": [
+  "code",
+  "code_problem"
+ ],
+ "menu": {
+  "article": "magazine-style feature article blending narrative and explanation",
+  "discussion": "teacher-student dialogue that works through the key points",
+  "faq": "comprehensive FAQ ordered from basic to advanced",
+  "math": "multi-step math word problem built on the document's numbers or relationships, with a worked solution",
+  "narrative": "narrative emphasizing the sequence of events or steps and their causes and effects",
+  "table": "structured table of the key information plus one question answered from it",
+  "tutorial": "step-by-step instructional guide",
+  "wiki": "encyclopedia-style article in high-quality English",
+  "diverse_qa": "varied questions and answers (yes/no, why/how, multiple choice, comparison, problem solving)",
+  "knowledge_list": "dense bulleted list of the facts, concepts, and numbers",
+  "explanation": "causal explanation of why and how the concepts, phenomena, or processes work",
+  "forum_thread": "online forum thread where users with different knowledge and opinions discuss the topic",
+  "entity_focus": "rewrite centered on an entity that is discussed but is not the main subject",
+  "persona": "rewrite by a particular kind of writer for a particular audience (e.g. a teacher for ten-year-olds, a journalist for skeptics)",
+  "code": "self-contained program (Python, C, or Java) that implements or models the content",
+  "code_problem": "programming problem based on the content, with a solution in Python, C, or Java"
+ },
+ "universal": [
+  "wiki",
+  "article",
+  "faq",
+  "knowledge_list",
+  "diverse_qa",
+  "persona"
+ ]
+}

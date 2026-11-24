@@ -1,0 +1,4 @@
+Rewrite the document to create a programming problem based on the information, processes, or relationships in the text. State the problem clearly, including the input and output format and one worked example. Then solve it in {language}: explain the approach step by step, give a complete, correct, commented solution, and show the output for the example. The problem should require real logic, such as loops, conditions, or data structures, rather than printing facts, and should use only facts from the document. Output only the problem and solution, nothing else.
+
+Document:
+{document}

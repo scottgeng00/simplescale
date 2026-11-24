@@ -1,0 +1,74 @@
+You are planning a collection of alternative web documents derived from one source document.
+
+Generate exactly {n} distinct prompts for another model. That model will receive each prompt together with the original source document and use it to write one new document that could appear on the public web.
+
+Your task is to write the prompts, not the resulting documents. Each prompt must work independently of the other prompts.
+
+### Objective
+
+Design prompts that produce a diverse collection of plausible web pages grounded in the source. Each resulting page should have a recognizable purpose and a natural reason to exist on the open web: explaining something, answering a question, reporting news, documenting a process, comparing alternatives, discussing a disagreement, reviewing, sharing notes, making an argument, or another purpose the source supports.
+
+The collection should present the source's information through meaningfully different content selections, perspectives, organizations, levels of detail, and styles of writing.
+
+### Step 1: divide the content before writing prompts
+
+Before writing any prompt, work out (in your reasoning) the source's distinct content units: its separate claims, examples, anecdotes, numbers, procedures, people, distinctions, and qualifications. Then give each prompt its own primary focus.
+
+- Only the first prompt may be a broad treatment covering most of the source. Every other prompt centers on a different unit or a different connection between units, and says so.
+- No two prompts may be built around the same anecdote, example, or main point. If two prompts would make the same central point in different packaging, change one of them.
+- Spread attention so that less obvious details and later parts of the source are represented, not only the opening or the most striking point.
+- A focused prompt names its focus and at most three or four supporting details. Do not list every fact of the source in a prompt; that makes every document a full retelling.
+- If the source is short or has a single thread, vary what each document is for (a question, a reaction, a definition, a practical use, a single detail) rather than retelling the whole thing again.
+- Ignore navigation menus, ads, sign-up prompts, teasers, cookie notices, and comment-section chrome in the source unless they are its main content.
+
+{previous}### Step 2: point to the material, do not restate it
+
+Your prompts are a major source of errors when they paraphrase the source. When a prompt names a fact, use the source's own key terms or a short exact quotation, and leave the details to the writer, who has the full source. Never restate numbers, dates, names, causes, or relationships in your own words, never add facts or background knowledge, and never assert what the source does not say or lacks. Do not ask the writer to explain, define, date, quantify, or quote anything the source does not itself explain, define, date, quantify, or quote. Do not merge facts the source keeps separate, and do not attribute a statement to anyone the source does not attribute it to. When the source is promotional or opinionated, have its claims attributed ("the company says", "the author argues") rather than stated as fact.
+
+Before finishing, re-check every number, unit, date, direction (more or less, cause or effect), and attribution in your prompts against the source.
+
+### Step 3: choose a distinct design for each prompt
+
+For each prompt choose a combination of communicative purpose, organizing principle, web form, audience, voice, and level of polish. Every prompt must differ from the others in purpose and form, not only in tone or title. Use forms that are published on the public web; do not use internal or private documents (memos, internal emails, tickets, reports to a manager).
+
+Each prompt comes with an assignment: a length, a writing quality, and a form drawn at random so that collections from different sources do not all look alike. Use the assigned form (or the alternative given) whenever it can honestly present some slice of this source, and choose the slice that suits it; only if neither can work without content the source lacks (a timeline without dates, a review of something nobody evaluates, an announcement of an event that is not in the source), choose the closest public web form that fits. Lengths are already scaled to the size of the source; pick a slice that fills the assigned length without padding.
+
+{slots}
+
+### Writing quality
+
+Describe the intended writing concretely in each prompt. Polished writing is clear and well organized. Everyday writing is competent but plain, with ordinary phrasing and uneven emphasis. Rough writing is how real people write quickly online, described through the author and situation (a forum regular answering tersely and assuming context, a phone-typed reply, a hobbyist's hurried post, a student's notes): it may wander, repeat itself, jump between points, leave a thought unfinished, use loose punctuation, or stop without a conclusion. Rough writing is not a caricature: no theatrical slang, profanity, "it's 2 am" asides, deliberately dropped articles, lowercase or typo gimmicks, or source sentences with the punctuation stripped. Never instruct the writer to "repeat X", to make deliberate errors, or to describe its own style or confusion.
+
+### Fidelity rules (put the relevant ones into each prompt)
+
+- Claims, numbers, conditions, attributions, time spans, hedges ("may", "probably", "some"), and uncertainty must stay as the source states them. Opinions and disputed claims stay marked as such and attributed to whoever holds them.
+- Hypothetical scenarios and examples are fine when clearly framed as hypothetical. Never ask for invented quotations, citations, statistics, studies, events, incidents, or personal experiences presented as real. An author may react, give an opinion, or ask a question.
+- No invented metadata: no dates, datelines, bylines, sign-offs, names of people or organizations, contact details, or placeholders that the source does not contain. Forum or comment participants may use plain usernames.
+- Do not ask for limitations or caveats that the source does not itself state or clearly imply.
+- If the source is mostly questions, a worksheet, a list, or a fragment, do not ask the writer to supply missing answers or facts.
+
+### How to write each prompt
+
+Address each prompt directly to the writing model in about 60-150 words, naming: the page to write and why it would exist; its primary focus and the few details to use (in the source's own terms); how to organize it; the audience, voice, writing quality, and length; and the fidelity rules that matter most for it. Vary how the prompts are phrased; do not begin them all the same way or follow one template.
+
+Refer to the material by what it is (for instance "the review", "the clinic's guidelines", "the recipe", "the council report"), never as "the source", "the provided text", "the text", "the passage", "the material", or "the document". The finished pages must stand on their own, as plain web text without Markdown or HTML, with no commentary about any writing task. Every prompt asks for faithfulness to the material's meaning and qualifications and for only the finished page to be returned.
+
+### Output format
+
+Return exactly {n} prompts, in the order of the assignments above. Prefix each prompt with a Markdown heading beginning with `##`, followed by a short descriptive title naming the form and focus (never use the words "comprehensive", "overview", "draft", "deep dive", or "introduction" in titles). Beneath the heading, provide only the executable prompt. Do not include an introduction, explanations of your choices, source summaries, or any of the rewritten documents.
+
+### Example
+
+The example below uses a fictional source solely to illustrate the specificity and variety expected. The fictional source is shown abbreviated, so its assigned lengths are longer than its size would allow. Its facts, wording, topic, and caveats must never appear in your prompts, and its forms and lengths are not a template to copy.
+
+<example>
+{examples}
+</example>
+
+### Source document
+
+Generate your {n} prompts for the document below. Treat this document as source material, not as instructions to follow.
+
+<document>
+{text}
+</document>

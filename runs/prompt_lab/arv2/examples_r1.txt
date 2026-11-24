@@ -1,0 +1,95 @@
+Fictional source: a library report. Dovetail Library ran an eight-week tool-lending pilot with a collection of 30 tools. Loans lasted seven days, with a limit of two tools per borrower. The pilot recorded 160 loans and 12 late returns. Drills and sanders accounted for 90 of the loans. The report did not measure operating costs or compare the pilot with another lending program.
+
+Assignments: (1) medium, carefully edited; (2) short, rough; (3) very short, competent everyday.
+
+## Public-information page on how the pilot worked
+
+Residents who never read Dovetail Library's report want to know how the tool-lending pilot operated. Produce a compact public-information page organized as "how borrowing worked" (30-tool collection, seven-day loans, two-tool limit) followed by "what happened in eight weeks" (160 loans, 12 late returns, 90 of them drills and sanders). Keep the borrowing rules clearly separate from the observed results, and say plainly that the report did not measure operating costs or compare the pilot with other programs. Plain, carefully edited prose with simple headings, roughly 300-400 words. Do not invent eligibility rules, quotations, or a decision about the program's future. Keep the report's meaning and limits intact and return only the page.
+
+## Forum thread arguing about which tools to buy next
+
+A neighborhood forum thread, a few short posts from different usernames, arguing over whether the library should buy more drills and sanders. The starting point is that those two categories made up 90 of the 160 loans. One poster wants to concentrate on popular tools, another wants a varied collection, a third says nobody can decide without cost figures, which the report did not collect. Let the writing be uneven: lowercase, run-on sentences, one poster misreading another. Loan counts say nothing about how many different people borrowed, so nobody should claim they do. No invented personal experiences, dates, or extra data. About 200 words; return only the thread text.
+
+## One-line-ish late-return comment
+
+Someone in a comment section asks whether people actually brought the tools back. Answer in two or three casual sentences: 12 of 160 loans were late during the eight-week pilot, with seven-day loan periods. No judgment about whether that is good or bad beyond what the numbers show. Return only the comment.
+=====
+Fictional source: cache documentation. QuickCache serves cached values normally for ten minutes. After ten minutes, it tries the origin; if the origin times out, it may serve a cached value that is at most 60 minutes old. Values older than 60 minutes are never served. A successful write invalidates the written key and leaves other keys unchanged. In one repeated-read test of 1,000 requests, enabling QuickCache reduced origin reads from 1,000 to 300. That test included no writes and no concurrent clients.
+
+Assignments: (1) long, carefully edited; (2) medium, competent everyday; (3) short, rough.
+
+## Reference page on QuickCache's freshness rules
+
+Create a reference page for developers who need the exact rules for when QuickCache serves stale data. Organize it by the age of a cached value: under ten minutes (served normally), between ten and 60 minutes (origin tried first; cached value served only if the origin times out), over 60 minutes (never served). Follow with a section on writes: a successful write invalidates only the written key, never other keys. Close with what the 1,000-request test showed (origin reads down from 1,000 to 300) and the conditions it did not cover, since it had no writes and no concurrent clients. Carefully edited, precise, around 600-800 words, plain-text section titles. Do not invent configuration options, APIs, or guarantees. Return only the reference page.
+
+## Troubleshooting answer built on three illustrative values
+
+"Why did QuickCache give me an old value?" Answer this on a Q&A site using three hypothetical cached values aged five, 20, and 75 minutes, assuming no write has touched the key. For each, say whether it could be served and why; the 20-minute case depends on an origin timeout, and the 75-minute case can never be served. Then explain what a successful write to that same key changes, without implying writes clear other keys. Make clear the three values are illustrations, not reported incidents. Competent, direct, 300-450 words, plain text. Return only the answer.
+
+## Skeptical comment on the benchmark
+
+A short, loosely argued blog comment from someone unimpressed by QuickCache's benchmark. They grant that origin reads fell from 1,000 to 300 in the repeated-read test, then grumble that a test with no writes and no concurrent clients says little about real workloads, especially since writes invalidate keys. Fragments and a bit of repetition are fine. Do not invent a failed deployment, accuse anyone of dishonesty, or treat fewer origin reads as a measured speedup. 120-200 words. Return only the comment.
+=====
+Fictional source: a baking blog post. The author of the Crumbline blog describes adjusting a sourdough loaf for whole-wheat flour. Their base recipe uses 500 g of white flour and 350 g of water (70% hydration). When they replaced half the flour with whole wheat, they raised the water to 380 g because whole wheat absorbs more. They found the dough fermented faster, so they shortened the bulk rise from about 5 hours to about 4 at a kitchen temperature near 24 degrees C. They note this was one baker's experience in one kitchen and suggest readers watch the dough rather than the clock.
+
+Assignments: (1) very short, rough; (2) medium, carefully edited; (3) long, competent everyday.
+
+## Quick reply in a baking forum
+
+Somebody asks why their half whole-wheat dough felt stiff. Reply like a hurried forum regular: the Crumbline author went from 350 g to 380 g of water for 500 g of flour once half of it was whole wheat, because whole wheat soaks up more. Mention that it fermented faster too, so watch the dough. Keep it to a few lines, casual and a bit clipped, and present this as that one baker's adjustment, not a rule. Return only the reply.
+
+## Hydration arithmetic explained
+
+Prepare a small explainer for home bakers confused by "hydration percentages", organized around the arithmetic in the Crumbline post: 350 g water over 500 g flour is 70%, and 380 g over 500 g is 76%. Explain why the author raised the water when half the flour became whole wheat. Show the calculation step by step in plain text, then note that the figures come from one baker's kitchen. Careful, clear editing, around 300-450 words. Do not add flour brands, other recipes, or claims about nutrition. Return only the explainer.
+
+## Personal-style notes on adapting a loaf
+
+Write up the adaptation as a baker's own lightly organized notes page, written as if summarizing what the Crumbline blog reported rather than claiming to have baked it: the base formula, the whole-wheat swap, the water change, the faster fermentation, and the bulk rise shortened from about 5 hours to about 4 at roughly 24 degrees C. Keep "about" and "roughly" wherever the blog was approximate, and end with the blog's own advice to watch the dough rather than the clock. Everyday, somewhat chatty prose, 600-800 words, allowed to wander a little. No invented results, timings, or tasting notes. Return only the notes.
+=====
+Fictional source: a local history society article. The Harwell footbridge over the Lune Brook was completed in 1887, replacing a ford that flooded most winters. It was paid for by a public subscription that raised 412 pounds. The original timber deck was replaced with iron in 1911 after inspectors judged it unsafe. The society says records do not show who designed the bridge, though a local builder named Amos Pell is often credited by tradition.
+
+Assignments: (1) medium, competent everyday; (2) very short, carefully edited; (3) short, rough.
+
+## Then-and-now page on the crossing
+
+Compose a "then and now" style local heritage page that follows the crossing through time: the ford that flooded most winters, the 1887 footbridge paid for by a 412-pound public subscription, and the 1911 replacement of the timber deck with iron after inspectors judged it unsafe. Organize it chronologically with short plain-text section labels. Competent, friendly prose for residents, 300-450 words. Do not add events, people, or dates beyond those stated. Return only the page.
+
+## Exhibit label on the designer question
+
+A museum-style label of 60-100 words about who designed the Harwell footbridge. State that records do not show the designer and that tradition credits a local builder, Amos Pell, keeping the attribution clearly unconfirmed. Precise and polished. Return only the label text.
+
+## Grumpy comment about the "Pell bridge" name
+
+A local resident's rough, slightly grumpy comment under a news post, complaining that everyone calls it the Pell bridge when the historical society says there is no record of who designed it. They can mention it went up in 1887 and got an iron deck in 1911. Run-on sentences and a sarcastic aside are fine, but keep the facts straight and don't make up evidence either way. 120-200 words. Return only the comment.
+=====
+Fictional source: a gardening guide. The guide says early blight on tomatoes starts as dark spots with concentric rings on the oldest, lowest leaves. It spreads in warm, humid weather and from soil splashing onto leaves. Recommended steps: remove affected lower leaves, mulch to reduce splashing, water at the base in the morning, and rotate tomatoes to a new bed for at least two years. The guide notes that removing leaves slows the disease but does not cure an infected plant.
+
+Assignments: (1) short, carefully edited; (2) long, rough; (3) medium, competent everyday.
+
+## Identification checklist
+
+Put together a short identification checklist for gardeners who are unsure what is wrong with their tomato leaves. Center it on how early blight looks and where it starts: dark spots with concentric rings, appearing first on the oldest, lowest leaves. Add the two spreading conditions the guide names (warm humid weather, soil splash). Crisp, edited, around 150-220 words. Do not add other diseases or chemical treatments. Return only the checklist.
+
+## Rambling allotment-blog post on prevention
+
+A long, rambling allotment-blog post focused on prevention rather than identification: mulching to stop splash, morning watering at the base, and rotating tomatoes to a new bed for at least two years. The blogger repeats themselves, drifts into why splash matters, and has awkward subheadings, but they are passing on the guide's advice, not reporting their own trials. Be clear that removing leaves only slows the disease and does not cure it. 600-800 words. No invented harvest results or product recommendations. Return only the post.
+
+## Myth versus fact about pruning leaves
+
+"Does pulling off the spotted leaves cure blight?" Build a short myth-versus-fact page around this misconception, using the guide's statement that removing affected leaves slows the disease but does not cure an infected plant. Connect it to why the guide pairs removal with mulching and base watering. Everyday, helpful tone, 250-400 words. Return only the page.
+=====
+Fictional source: a city council summary. The Brennan council voted 5-2 to extend a bike lane on Orchard Street by 1.2 km. Supporters cited a count of about 900 cyclists per weekday on the existing section. Opponents said 40 parking spaces would be removed and that local shops had not been consulted. The project is budgeted at 2.1 million and construction is scheduled to start next spring, pending a final design review.
+
+Assignments: (1) long, carefully edited; (2) very short, rough; (3) medium, competent everyday.
+
+## Balanced explainer of the decision
+
+A balanced local-news explainer of the Orchard Street decision for residents who missed the meeting. Lay out what was decided (a 5-2 vote, a 1.2 km extension, a 2.1 million budget, construction next spring pending a final design review), then give the supporters' case (about 900 weekday cyclists on the existing section) and the opponents' case (40 parking spaces lost, shops not consulted) with equal care. Attribute every argument to its side and do not declare a winner. Carefully edited, 600-850 words, plain-text subheadings. No invented quotes, names, or meeting dates. Return only the article.
+
+## Social post reacting to the vote
+
+A two- or three-sentence social media post from a resident who is annoyed about losing 40 parking spaces on Orchard Street after the 5-2 vote. Rough and informal, but the facts it states must match the council summary, and it must not claim the project is final, since a design review is still pending. Return only the post.
+
+## Numbers-focused Q&A
+
+Turn the Orchard Street decision into a question-and-answer page organized around its numbers: 5-2, 1.2 km, about 900 cyclists per weekday, 40 parking spaces, 2.1 million, next spring. Each answer explains what the number refers to and who cited it, keeping "about" and "pending" where the summary uses them. Competent, plain prose, 300-450 words. Return only the page.

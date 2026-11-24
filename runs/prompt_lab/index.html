@@ -1,0 +1,288 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Active Reading prompt lab</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 0; font-size: 14px; }
+#tabs { height: 34px; display: flex; gap: 4px; align-items: end; padding: 0 8px; border-bottom: 1px solid #ccc; background: #f3f3f3; }
+#tabs button { border: 1px solid #ccc; border-bottom: none; background: #e6e6e6; padding: 6px 14px; cursor: pointer; }
+#tabs button.on { background: #fff; font-weight: bold; }
+.tok { white-space: pre-wrap; cursor: default; border-radius: 2px; } .tok.prefix { color: #999; } .tok.sel { outline: 2px solid #06c; }
+#s_text { font-family: ui-monospace, monospace; font-size: 13px; line-height: 1.6; }
+.sharp { font-family: ui-monospace, monospace; font-size: 12px; padding: 3px 4px; border-bottom: 1px solid #eee; cursor: pointer; }
+.sharp:hover { background: #f0f6ff; } #s_tip { position: fixed; background: #222; color: #eee; padding: 6px 8px; font: 12px ui-monospace, monospace;
+  border-radius: 4px; pointer-events: none; display: none; z-index: 9; white-space: pre; }
+.tab { display: flex; height: calc(100vh - 35px); } .tab.hidden { display: none; }
+.left { width: 46%; overflow-y: auto; padding: 12px; border-right: 1px solid #ccc; box-sizing: border-box; }
+.right { flex: 1; overflow-y: auto; padding: 12px; box-sizing: border-box; }
+textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, monospace; font-size: 12px; }
+h3 { margin: 14px 0 6px; } .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 4px 0; }
+.row label { white-space: nowrap; } input[type=number] { width: 70px; } input.wide { width: 260px; }
+.card { border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; margin: 8px 0; background: #fafafa; }
+.card pre { white-space: pre-wrap; margin: 6px 0; font-family: ui-monospace, monospace; font-size: 12.5px; }
+.meta { color: #666; font-size: 12px; } .err { color: #b00; } details summary { cursor: pointer; color: #555; }
+button { padding: 4px 10px; } .strategy { background: #eef4ff; }
+</style></head>
+<body>
+<div id="tabs"><button id="tb_ar" class="on" onclick="showTab('ar')">Active reading</button>
+  <button id="tb_gen" onclick="showTab('gen')">Generate</button>
+  <button id="tb_sur" onclick="showTab('sur')">Surprisal</button></div>
+<div id="tab_ar" class="tab">
+<div id="left" class="left">
+  <div class="row"><b>Servers:</b> <span id="servers">…</span></div>
+  <h3>Document</h3>
+  <div class="row"><button onclick="sample()">Sample pool doc</button><span class="meta" id="docmeta"></span></div>
+  <textarea id="doc" rows="12" placeholder="Sample or paste a document"></textarea>
+
+  <h3>Stage 1: strategies</h3>
+  <div class="row">
+    <label>model <select id="s_model"><option>instruct</option><option>base</option><option>base4b</option></select></label>
+    <label><input type="checkbox" id="s_think" checked> thinking</label>
+    <label>n <input type="number" id="s_n" value="8"></label>
+    <label>temp <input type="number" id="s_temp" value="1.0" step="0.1"></label>
+    <label>top_p <input type="number" id="s_top_p" value="0.95" step="0.05"></label>
+    <label>max tok <input type="number" id="s_max" value="16384"></label>
+  </div>
+  <div class="row"><label>base prefix <input class="wide" id="s_prefix" value=""></label>
+    <label>stop (JSON) <input class="wide" id="s_stop" value=""></label></div>
+  <label>Strategy prompt ({text}, {n}, {examples})</label>
+  <textarea id="s_tmpl" rows="9"></textarea>
+  <label>Few-shot examples ({examples})</label>
+  <textarea id="s_examples" rows="8"></textarea>
+
+  <h3>Stage 2: applications</h3>
+  <div class="row">
+    <label>model <select id="a_model"><option>instruct</option><option>base</option><option>base4b</option></select></label>
+    <label><input type="checkbox" id="a_think"> thinking</label>
+    <label>temp <input type="number" id="a_temp" value="1.0" step="0.1"></label>
+    <label>top_p <input type="number" id="a_top_p" value="0.95" step="0.05"></label>
+    <label>max tok <input type="number" id="a_max" value="4096"></label>
+  </div>
+  <div class="row"><label>base prefix <input class="wide" id="a_prefix" value=""></label>
+    <label>stop (JSON) <input class="wide" id="a_stop" value=""></label></div>
+  <label>Application prompt ({text}, {strategy})</label>
+  <textarea id="a_tmpl" rows="9"></textarea>
+
+  <div class="row" style="margin-top:10px">
+    <button onclick="runAll()"><b>Run strategies + applications</b></button>
+    <button onclick="loadDefaults('instruct')">Instruct defaults</button>
+    <button onclick="loadDefaults('base')">Base defaults</button>
+  </div>
+</div>
+<div id="right" class="right"><div class="meta">Results appear here.</div></div>
+</div>
+<div id="tab_gen" class="tab hidden">
+<div class="left">
+  <div class="row"><b>Servers:</b> <span class="servers">…</span></div>
+  <h3>Document</h3>
+  <div class="row"><button onclick="sampleGen()">Sample pool doc</button><span class="meta" id="g_docmeta"></span></div>
+  <textarea id="g_doc" rows="12" placeholder="Sample or paste a document"></textarea>
+  <h3>Prompt</h3>
+  <div class="row"><label>preset <select id="g_preset" onchange="loadPreset()"></select></label></div>
+  <div class="row">
+    <label>model <select id="g_model"><option>base</option><option>base4b</option><option>instruct</option></select></label>
+    <label><input type="checkbox" id="g_think"> thinking (instruct)</label>
+    <label>n <input type="number" id="g_n" value="4"></label>
+    <label>temp <input type="number" id="g_temp" value="1.0" step="0.1"></label>
+    <label>top_p <input type="number" id="g_top_p" value="0.95" step="0.05"></label>
+    <label>max tok <input type="number" id="g_max" value="1500"></label>
+    <label>presence pen. <input type="number" id="g_pp" value="0" step="0.1"></label>
+    <label>freq. pen. <input type="number" id="g_fp" value="0" step="0.1"></label>
+  </div>
+  <div class="row"><label>base prefix <input class="wide" id="g_prefix" value=""></label>
+    <label>stop (JSON) <input class="wide" id="g_stop" value='["<|endoftext|>"]'></label></div>
+  <label>Template ({document} = the document above). Base: raw completion of template + prefix. Instruct: sent as the user message.</label>
+  <textarea id="g_tmpl" rows="16"></textarea>
+  <div class="row" style="margin-top:10px"><button onclick="runGen()"><b>Generate</b></button></div>
+</div>
+<div id="g_out" class="right"><div class="meta">Samples appear here.</div></div>
+</div>
+
+<div id="tab_sur" class="tab hidden">
+<div class="left" style="width:34%">
+  <div class="row"><b>Servers:</b> <span class="servers">…</span></div>
+  <div class="row"><button onclick="sampleSur()">Sample pool doc</button><span class="meta" id="s_docmeta"></span></div>
+  <textarea id="s_doc" rows="10" placeholder="Sample or paste a document"></textarea>
+  <div class="row">
+    <label>model <select id="s_model2"><option>base</option><option>base4b</option><option>instruct</option></select></label>
+    <label>prefix (JSON string) <input id="s_pre" value='""' style="width:90px"></label>
+    <label>top-k <input type="number" id="s_k" value="5"></label>
+    <button onclick="runSur()"><b>Score</b></button>
+  </div>
+  <div class="row">
+    <label>colour / rank by <select id="s_metric" onchange="renderSur()">
+      <option value="gap">gap: log p(top-1) − log p(true)</option>
+      <option value="sur">surprisal: −log p(true)</option></select></label>
+  </div>
+  <div class="meta" id="s_stats"></div>
+  <h3>Sharpest tokens</h3>
+  <div id="s_list"></div>
+</div>
+<div class="right"><div class="meta" style="margin-bottom:6px">Hover a token for its logprob and the model's top-k. Darker = larger value of the selected metric (capped at 10 nats). The first token has no logprob without a prefix.</div>
+  <div id="s_text"></div></div>
+</div>
+<div id="s_tip"></div>
+<script>
+const D = {
+  instruct: {
+    s_tmpl: `Consider the following document. What are some strategies specific to this document that I can use to help me learn and remember all of the information contained? Give exactly {n} strategies. Use markdown and prefix each strategy with ##
+
+Here are examples of good strategies written for other documents. Yours should be specific to this document, not copies of these:
+
+{examples}
+
+<document>
+{text}
+</document>`,
+    a_tmpl: `Here's a learning strategy:
+{strategy}
+
+Apply this strategy to the following document:
+<document>
+{text}
+</document>`,
+    s_prefix: "", s_stop: "", a_prefix: "", a_stop: "", s_model: "instruct", a_model: "instruct",
+  },
+  base: {
+    s_tmpl: `Below is a document, followed by a study guide an expert tutor wrote for it. The guide gives {n} strategies specific to this document for learning and remembering all of the information it contains. Each strategy is a markdown section starting with ##.
+
+Example strategies from the tutor's guides for other documents:
+
+{examples}
+
+Document:
+{text}
+
+Study guide ({n} strategies):
+
+`,
+    a_tmpl: `Document:
+{text}
+
+Study material written by applying this learning strategy to the document above:
+{strategy}
+
+---
+
+`,
+    s_prefix: "## ", s_stop: '["\\n\\nDocument:", "<|endoftext|>"]', a_prefix: "", a_stop: '["\\n---\\n", "\\nDocument:", "<|endoftext|>"]',
+    s_model: "base", a_model: "base",
+  },
+};
+const EXAMPLES = `## Build a cause-and-effect timeline
+List every dated event in the order it happened. For each one, write a sentence on what led to it and what it led to, so the whole sequence can be recalled as a single chain rather than as isolated dates.
+
+## Teach the mechanism to a beginner
+Explain how the process works step by step in plain language, as if to someone with no background, defining each technical term the first time it appears and saying why each step is needed.
+
+## Quiz yourself on the exact details
+Write a question for every specific number, name, date and definition, answer each one from memory, then check the answers against the text and rewrite the ones you got wrong.`;
+const $ = id => document.getElementById(id);
+function loadDefaults(kind) { for (const [k, v] of Object.entries(D[kind])) $(k).value = v; }
+loadDefaults("instruct"); $("s_examples").value = EXAMPLES;
+const words = s => (s.trim().match(/\S+/g) || []).length;
+const esc = s => s.replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]));
+function opts(p) {
+  const stop = $(p + "_stop").value.trim();
+  return {thinking: $(p + "_think").checked, temperature: $(p + "_temp").value, top_p: $(p + "_top_p").value,
+          max_tokens: $(p + "_max").value, prefix: $(p + "_prefix").value, stop: stop ? JSON.parse(stop) : null};
+}
+async function post(url, body) {
+  const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  return r.json();
+}
+async function servers() { const s = await (await fetch("/api/servers")).json();
+  const t = Object.entries(s).map(([k, v]) => `${k}: ${v}`).join(" · ");
+  $("servers").textContent = t; document.querySelectorAll(".servers").forEach(e => e.textContent = t); }
+function showTab(t) { for (const k of ["ar", "gen", "sur"]) { $("tab_" + k).classList.toggle("hidden", k !== t); $("tb_" + k).classList.toggle("on", k === t); } }
+$("g_tmpl").value = `{document}
+
+`;
+let PRESETS = [];
+(async () => { PRESETS = await (await fetch("/api/presets")).json();
+  $("g_preset").innerHTML = PRESETS.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join(""); loadPreset(); })();
+function loadPreset() { const p = PRESETS[$("g_preset").value]; if (!p) return;
+  $("g_tmpl").value = p.template; $("g_model").value = p.model; $("g_stop").value = JSON.stringify(p.stop || []);
+  $("g_max").value = p.max || 1500; $("g_temp").value = p.temp || 1.0; $("g_top_p").value = p.top_p || 0.95;
+  $("g_pp").value = p.pp || 0; $("g_fp").value = p.fp || 0; }
+let SUR = [];
+async function sampleSur() {
+  const d = await (await fetch("/api/sample")).json();
+  $("s_doc").value = d.text; $("s_docmeta").textContent = `${d.id} · row ${d.source_row} · ${words(d.text)} words`;
+}
+async function runSur() {
+  $("s_text").innerHTML = '<div class="meta">scoring…</div>';
+  let pre = ""; try { pre = JSON.parse($("s_pre").value || '""'); } catch (e) { pre = $("s_pre").value; }
+  const r = await post("/api/surprisal", {text: $("s_doc").value, prefix: pre, model: $("s_model2").value, top_k: $("s_k").value});
+  if (r.error) { $("s_text").innerHTML = `<div class="err">${esc(r.error)}</div>`; return; }
+  SUR = r.tokens.map((x, i) => { const top1 = x.top.length ? x.top[0][1] : null;
+    const rank = x.top.findIndex(a => a[0] === x.t);
+    return {...x, i, sur: x.lp == null ? null : -x.lp, gap: x.lp == null || top1 == null ? null : Math.max(0, top1 - x.lp),
+            rank: rank < 0 ? `>${x.top.length}` : rank + 1}; });
+  renderSur();
+}
+function renderSur() {
+  const m = $("s_metric").value, sc = SUR.filter(x => !x.prefix && x[m] != null);
+  const vis = s => JSON.stringify(s).slice(1, -1);
+  $("s_text").innerHTML = SUR.map(x => { const v = x[m] == null ? 0 : Math.min(x[m], 10) / 10;
+    return `<span class="tok${x.prefix ? " prefix" : ""}" id="tk${x.i}" data-i="${x.i}" style="background:rgba(220,40,40,${(v * 0.85).toFixed(3)})">${esc(x.t)}</span>`; }).join("");
+  const nll = sc.reduce((a, x) => a + x.sur, 0), argmax = sc.filter(x => x.gap === 0).length;
+  $("s_stats").textContent = `${sc.length} scored tokens · mean surprisal ${(nll / Math.max(1, sc.length)).toFixed(3)} nats/token · ` +
+    `true token = model's top-1 at ${(100 * argmax / Math.max(1, sc.length)).toFixed(1)}% of positions`;
+  const top = [...sc].sort((a, b) => b[m] - a[m]).slice(0, 40);
+  $("s_list").innerHTML = top.map(x => { const ctx = SUR.slice(Math.max(0, x.i - 8), x.i).map(y => y.t).join("");
+    return `<div class="sharp" data-i="${x.i}">${m} ${x[m].toFixed(2)} · p=${Math.exp(x.lp).toExponential(1)} · rank ${x.rank}<br>` +
+      `…${esc(vis(ctx))}<b style="color:#c00">[${esc(vis(x.t))}]</b> model wanted <b>${esc(vis(x.top[0] ? x.top[0][0] : "?"))}</b></div>`; }).join("");
+}
+document.addEventListener("mouseover", e => { const el = e.target.closest(".tok"); const tip = $("s_tip");
+  if (!el) { tip.style.display = "none"; return; } const x = SUR[+el.dataset.i]; if (!x) return;
+  const vis = s => JSON.stringify(s);
+  tip.textContent = `true ${vis(x.t)}  logp ${x.lp == null ? "n/a" : x.lp.toFixed(3)}  (p=${x.lp == null ? "" : Math.exp(x.lp).toFixed(4)}, rank ${x.rank})\n` +
+    x.top.map(([t, l], j) => `${j + 1}. ${vis(t).padEnd(18)} ${l.toFixed(3)}  p=${Math.exp(l).toFixed(4)}`).join("\n");
+  tip.style.display = "block"; });
+document.addEventListener("mousemove", e => { const tip = $("s_tip"); tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px"; });
+document.addEventListener("click", e => { const el = e.target.closest(".sharp"); if (!el) return;
+  document.querySelectorAll(".tok.sel").forEach(t => t.classList.remove("sel"));
+  const t = $("tk" + el.dataset.i); t.classList.add("sel"); t.scrollIntoView({block: "center"}); });
+async function sampleGen() {
+  const d = await (await fetch("/api/sample")).json();
+  $("g_doc").value = d.text; $("g_docmeta").textContent = `${d.id} · ${d.source_subset} row ${d.source_row} · ${words(d.text)} words`;
+}
+async function runGen() {
+  const out = $("g_out"); out.innerHTML = `<div class="meta">generating ${$("g_n").value} samples (${$("g_model").value})…</div>`;
+  const r = await post("/api/generate", {text: $("g_doc").value, template: $("g_tmpl").value, model: $("g_model").value,
+                                         n: $("g_n").value, opts: {...opts("g"), presence_penalty: $("g_pp").value, frequency_penalty: $("g_fp").value}});
+  if (r.error) { out.innerHTML = `<div class="err">${esc(r.error)}</div>`; return; }
+  out.innerHTML = `<div class="card"><details><summary>exact prompt sent</summary><pre>${esc(r.prompt)}</pre></details></div>` +
+    r.outputs.map((o, i) => `<div class="card"><b>Sample ${i + 1}</b> <span class="meta">${meta(o)}</span>${reasoningBlock(o)}<pre>${esc(o.text)}</pre></div>`).join("");
+}
+servers(); setInterval(servers, 30000);
+async function sample() {
+  const d = await (await fetch("/api/sample")).json();
+  $("doc").value = d.text; $("docmeta").textContent = `${d.id} · ${d.source_subset} row ${d.source_row} · ${words(d.text)} words`;
+}
+function meta(out) { const u = out.usage || {};
+  return `${words(out.text)} words · ${u.completion_tokens ?? "?"} completion tokens · finish: ${out.finish_reason}`; }
+function reasoningBlock(out) { return out.reasoning ? `<details><summary>reasoning (${words(out.reasoning)} words)</summary><pre>${esc(out.reasoning)}</pre></details>` : ""; }
+async function applyOne(i, strategy) {
+  const el = $("app" + i);
+  el.innerHTML = `<div class="meta">generating…</div>`;
+  const out = await post("/api/apply", {text: $("doc").value, strategy, template: $("a_tmpl").value,
+                                       model: $("a_model").value, opts: opts("a")});
+  if (out.error) { el.innerHTML = `<div class="err">${esc(out.error)}</div>`; return; }
+  el.innerHTML = `<div class="meta">${meta(out)} <button onclick='applyOne(${i}, ${JSON.stringify(strategy).replace(/'/g, "&#39;")})'>regenerate</button></div>${reasoningBlock(out)}<pre>${esc(out.text)}</pre>`;
+}
+async function runAll() {
+  const right = $("right");
+  right.innerHTML = `<div class="meta">generating strategies (${$("s_model").value}${$("s_think").checked && $("s_model").value === "instruct" ? ", thinking" : ""})…</div>`;
+  const out = await post("/api/strategies", {text: $("doc").value, template: $("s_tmpl").value, examples: $("s_examples").value,
+                                            n: $("s_n").value, model: $("s_model").value, opts: opts("s")});
+  if (out.error) { right.innerHTML = `<div class="err">${esc(out.error)}</div>`; return; }
+  right.innerHTML = `<div class="card"><b>Stage 1</b> <span class="meta">${meta(out)} · ${out.strategies.length} parsed strategies</span>
+    ${reasoningBlock(out)}<details><summary>raw reply</summary><pre>${esc(out.text)}</pre></details>
+    <details><summary>exact prompt sent</summary><pre>${esc(out.prompt)}</pre></details></div>`;
+  out.strategies.forEach((s, i) => {
+    right.insertAdjacentHTML("beforeend", `<div class="card"><div class="strategy"><pre>${esc(s)}</pre></div><div id="app${i}"></div></div>`);
+  });
+  await Promise.all(out.strategies.map((s, i) => applyOne(i, s)));
+}
+</script>
+</body></html>

@@ -1,0 +1,33 @@
+{
+ "new_prompts": {
+  "diverse_qa": "Rewrite the document as a set of diverse questions and answers about its content. Cover different aspects of the document and ask questions that require different kinds of thinking: yes/no questions, open-ended what, how, and why questions, multiple-choice questions with the options included, comparison questions, and problem-solving questions where the document supports them. Focus on factual information, important knowledge, and concrete details. Each question should be self-contained and understandable without the document, and each answer should be correct, clear, and concise. Format each pair as \"Question:\" followed by \"Answer:\". Output only the questions and answers, nothing else.",
+  "knowledge_list": "Rewrite the document as a concise, organized list of the factual information, concrete details, key concepts, and important numbers it contains. Each point should be clear, specific, self-contained, and supported by the document. Group related points together and make the list information-dense and easy to learn from. Do not add titles or headings. Output only the list, nothing else.",
+  "explanation": "Rewrite the document to provide clear scientific or logical explanations for concepts, phenomena, or processes mentioned in the text. Make implicit reasoning explicit by explaining why things work the way they do, what principles or mechanisms are at play, and how different factors relate to each other. Focus on building understanding through causal explanations rather than just describing facts. Output only the explanatory text, nothing else.",
+  "forum_thread": "Rewrite the document as an online forum thread in which several users discuss its content. Start with an opening post that asks a question or raises a point, followed by replies from users with different levels of knowledge and different opinions, including corrections, follow-up questions, and some disagreement. Write each post in a natural, informal voice that suits its author, and spread the document's information across the posts. Do not add facts that are not in the document. Format each post as \"username:\" followed by its text. Output only the thread, nothing else.",
+  "entity_focus": "Choose one important entity from the document, such as a person, place, organization, object, or concept, and rewrite the document centered on it. Describe the entity, then present the document's information from its point of view: what the document says about it, how it relates to the other entities in the document, and why it matters in this context. Do not add facts that are not in the document. Output only the rewritten text, nothing else.",
+  "persona": "Rewrite the document as if you were {persona} writing for {audience}. Keep the key facts and ideas of the document, but choose the content, structure, vocabulary, and tone that this writer would naturally use for this audience. Write as this persona, attributing the document's own claims and work to their original authors rather than claiming them as yours. Do not add facts that are not in the document. Output only the rewritten text, nothing else.",
+  "code": "Rewrite the document as a self-contained, well-commented {language} program that captures its content. If the document contains code, rewrite that code into clean, correct, idiomatic {language}. If it describes a procedure, rule, calculation, or process, implement it. Otherwise, model the document's key information as data structures and write functions that use them to answer questions a reader might have. Use descriptive names, and write comments and docstrings that explain the concepts, facts, and reasoning from the document, not just what each line does. Keep the program under about 120 lines, with a short main routine that runs it on example inputs and prints the results. Keep every fact consistent with the document: do not invent details, and do not invent numbers, scores, weights, or ratings that the document does not give. Do not add author or source header comments. Output only the {language} code in a single code block, nothing else.",
+  "code_problem": "Rewrite the document to create a programming problem based on the information, processes, or relationships in the text. State the problem so that it is self-contained, without referring to the document, and include the input and output format and one worked example. If the document has no natural computation, use a simple data-processing task over its facts, such as searching, sorting, grouping, or counting, rather than inventing rules. Then solve it in {language}: explain the approach step by step, give a complete, correct, commented solution, and show the output for the example. The problem should require real logic, such as loops, conditions, or data structures, and should use only facts from the document. Output only the problem and solution, nothing else."
+ },
+ "slots": {
+  "language": [
+   "Python",
+   "C",
+   "Java"
+  ],
+  "persona": [
+   "a high school science teacher",
+   "a skeptical investigative journalist",
+   "an enthusiastic hobbyist blogger",
+   "a seasoned practitioner in the field",
+   "a historian looking back decades later"
+  ],
+  "audience": [
+   "curious ten-year-olds",
+   "an interested professional who wants to hear all the extra details and complications",
+   "university students preparing for an exam",
+   "skeptics who doubt the topic matters",
+   "an expert from a different field encountering this topic for the first time"
+  ]
+ }
+}

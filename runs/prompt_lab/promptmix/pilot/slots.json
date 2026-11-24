@@ -1,0 +1,21 @@
+{
+ "language": [
+  "Python",
+  "C",
+  "Java"
+ ],
+ "persona": [
+  "a high school science teacher",
+  "a skeptical investigative journalist",
+  "an enthusiastic hobbyist blogger",
+  "a seasoned practitioner in the field",
+  "a historian looking back decades later"
+ ],
+ "audience": [
+  "curious ten-year-olds",
+  "an interested professional who wants to hear all the extra details and complications",
+  "university students preparing for an exam",
+  "skeptics who doubt the topic matters",
+  "an expert from a different field encountering this topic for the first time"
+ ]
+}

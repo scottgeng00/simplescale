@@ -1,0 +1,7 @@
+Problems from Everywhere: Challenging Problems Inspired by Everyday Reading
+
+Every problem in this collection began with something the author happened to read: a news story, a forum post, a product page, a biography, a recipe. The seed passage is quoted first, then the mathematical idea the author took from it. The problem itself is original and at olympiad / AIME difficulty: it takes that idea in an unexpected direction instead of asking about the passage's own numbers, and it has a precise, checkable answer. Solutions are at the end of the book.
+===ITEM===
+### Problem {k}
+*Seed:* {seed}
+*Idea:*

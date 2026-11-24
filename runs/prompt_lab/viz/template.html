@@ -1,0 +1,83 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>3C: synthetic data method × generator size</title>
+<style>
+.viz-root { color-scheme: light; --surface-1:#fcfcfb; --page:#f9f9f7; --text-primary:#0b0b0b; --text-secondary:#52514e;
+  --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7; --s2b:#86b6ef; --s9b:#2a78d6; --s27b:#104281; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .viz-root { color-scheme: dark; --surface-1:#1a1a19;
+  --page:#0d0d0d; --text-primary:#fff; --text-secondary:#c3c2b7; --grid:#2c2c2a; --axis:#383835; --s2b:#86b6ef; --s9b:#3987e5; --s27b:#184f95; } }
+:root[data-theme="dark"] .viz-root { color-scheme: dark; --surface-1:#1a1a19; --page:#0d0d0d; --text-primary:#fff; --text-secondary:#c3c2b7;
+  --grid:#2c2c2a; --axis:#383835; --s2b:#86b6ef; --s9b:#3987e5; --s27b:#184f95; }
+body { margin:0; font-family: system-ui, sans-serif; }
+.viz-root { background:var(--page); color:var(--text-primary); padding:20px 24px; min-height:100vh; box-sizing:border-box; }
+h1 { font-size:18px; margin:0 0 4px; } .sub { color:var(--text-secondary); font-size:13px; margin:0 0 14px; max-width:1100px; }
+.legend { display:flex; gap:16px; font-size:12px; color:var(--text-secondary); margin-bottom:10px; align-items:center; flex-wrap:wrap; }
+.legend .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+.legend .line { display:inline-block; width:18px; border-top:2px dashed var(--text-secondary); margin-right:5px; vertical-align:3px; }
+.legend .line.fresh { border-top-style:dotted; }
+svg text { font-size:11px; fill:var(--text-secondary); } svg .rowlab { fill:var(--text-primary); font-size:12px; }
+svg .grp { fill:var(--muted); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+svg .coltitle { fill:var(--text-primary); font-size:12px; font-weight:600; } svg .dir { fill:var(--muted); font-size:10px; }
+.chart { background:var(--surface-1); border-radius:8px; padding:8px 4px; overflow-x:auto; }
+#tip { position:fixed; pointer-events:none; background:var(--surface-1); color:var(--text-primary); border:1px solid var(--axis);
+  border-radius:6px; padding:6px 9px; font-size:12px; display:none; box-shadow:0 2px 8px rgba(0,0,0,.15); white-space:nowrap; }
+details { margin-top:14px; font-size:12px; color:var(--text-secondary); } table { border-collapse:collapse; margin-top:6px; }
+td, th { padding:3px 8px; border-bottom:1px solid var(--grid); text-align:right; } td:first-child, th:first-child { text-align:left; }
+</style></head>
+<body><div class="viz-root">
+<h1>3× Chinchilla: synthetic-data method × generator size</h1>
+<p class="sub">w1152 student, 25.8B training tokens. Every synthetic run is 4 epochs of the 0.25C real pool + synthetic views of the same documents (2/3 of tokens).
+Dashed line = real pool repeated 12×; dotted = fresh unique (unfiltered) DCLM. Each panel has its own scale; arrows give the better direction.
+Single seeds: differences under ~0.005 avg7 / ~0.002 bpb are noise. basegen batch Vendi not measured.</p>
+<div class="legend"><span><span class="dot" style="background:var(--s2b)"></span>Qwen3.5-2B generator</span>
+<span><span class="dot" style="background:var(--s9b)"></span>9B</span><span><span class="dot" style="background:var(--s27b)"></span>27B</span>
+<span><span class="line"></span>real repeats (12×)</span><span><span class="line fresh"></span>fresh real</span></div>
+<div class="chart"><svg id="svg"></svg></div>
+<details><summary>Table view</summary><div id="tbl"></div></details>
+<div id="tip"></div>
+</div>
+<script>
+const D = /*DATA*/null;
+const W_LAB = 150, W_COL = 150, GAP = 22, TOP = 46, ROWH = 24, GRPH = 20, PAD = 10;
+const svg = document.getElementById("svg"), NS = "http://www.w3.org/2000/svg";
+const el = (t, a, p = svg) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+const sizeVar = s => ({"2B": "var(--s2b)", "9B": "var(--s9b)", "27B": "var(--s27b)"})[s];
+// row layout with group headers
+let y = TOP; const ys = [];
+D.rows.forEach((r, i) => { if (i === 0 || D.rows[i - 1].group !== r.group) { y += GRPH; ys.push({grp: r.group, y: y - 6}); } ys.push({row: r, y: y + ROWH / 2}); y += ROWH; });
+const H = y + 30, Wt = W_LAB + D.cols.length * (W_COL + GAP);
+svg.setAttribute("width", Wt); svg.setAttribute("height", H);
+ys.forEach(o => { if (o.grp) el("text", {x: 8, y: o.y, class: "grp"}).textContent = o.grp;
+  else el("text", {x: 18, y: o.y + 4, class: "rowlab"}).textContent = o.row.label; });
+const tip = document.getElementById("tip");
+D.cols.forEach(([key, title, better, dp], ci) => {
+  const x0 = W_LAB + ci * (W_COL + GAP), x1 = x0 + W_COL;
+  const vals = D.rows.map(r => r[key]).concat([D.ref.real[key], D.ref.fresh[key]]).filter(v => v != null);
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08 || 1; lo -= pad; hi += pad;
+  const X = v => x0 + (v - lo) / (hi - lo) * W_COL;
+  el("text", {x: x0, y: 16, class: "coltitle"}).textContent = title;
+  el("text", {x: x0, y: 30, class: "dir"}).textContent = better === "higher" ? "→ better" : "← better";
+  // ticks
+  const step = (hi - lo) / 3;
+  for (let t = 0; t <= 3; t++) { const v = lo + t * step, xx = X(v);
+    el("line", {x1: xx, x2: xx, y1: TOP, y2: H - 26, stroke: "var(--grid)", "stroke-width": 1});
+    el("text", {x: xx, y: H - 12, "text-anchor": "middle"}).textContent = v.toFixed(dp === 0 ? 0 : (dp === 1 ? 0 : 3)); }
+  for (const [rk, dash, name] of [["real", "5 4", "real repeats (12×)"], ["fresh", "1.5 3", "fresh real"]]) {
+    const v = D.ref[rk][key]; if (v == null) continue;
+    const ln = el("line", {x1: X(v), x2: X(v), y1: TOP, y2: H - 26, stroke: "var(--text-secondary)", "stroke-width": 1.5, "stroke-dasharray": dash});
+    const hit = el("line", {x1: X(v), x2: X(v), y1: TOP, y2: H - 26, stroke: "transparent", "stroke-width": 10});
+    hit.addEventListener("mousemove", e => show(e, `<b>${name}</b><br>${title}: ${v.toFixed(dp)}`)); hit.addEventListener("mouseleave", hide); }
+  ys.forEach(o => { if (!o.row) return; const v = o.row[key]; if (v == null) { el("text", {x: x0 + 4, y: o.y + 4}).textContent = "n/a"; return; }
+    el("circle", {cx: X(v), cy: o.y, r: 5.5, fill: sizeVar(o.row.size), stroke: "var(--surface-1)", "stroke-width": 2});
+    const hit = el("circle", {cx: X(v), cy: o.y, r: 11, fill: "transparent"});
+    const rv = D.ref.real[key], d = rv == null ? "" : `<br>vs real repeats: ${(v - rv >= 0 ? "+" : "") + (v - rv).toFixed(dp)}`;
+    hit.addEventListener("mousemove", e => show(e, `<b>${o.row.label}</b> (${o.row.run})<br>${title}: ${v.toFixed(dp)}${d}`));
+    hit.addEventListener("mouseleave", hide); });
+});
+function show(e, h) { tip.innerHTML = h; tip.style.display = "block"; tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 12) + "px"; }
+function hide() { tip.style.display = "none"; }
+// table view
+const all = D.rows.concat([{label: "real repeats (12×)", ...D.ref.real}, {label: "fresh real", ...D.ref.fresh}]);
+let t = "<table><tr><th>run</th>" + D.cols.map(c => `<th>${c[1]}</th>`).join("") + "</tr>";
+all.forEach(r => { t += `<tr><td>${r.label}</td>` + D.cols.map(([k, , , dp]) => `<td>${r[k] == null ? "–" : r[k].toFixed(dp)}</td>`).join("") + "</tr>"; });
+document.getElementById("tbl").innerHTML = t + "</table>";
+</script></body></html>

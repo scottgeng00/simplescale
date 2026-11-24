@@ -1,0 +1,14 @@
+Below is a document, followed by a menu of ways to rewrite a document. Decide how well each rewrite type suits this particular document, judging whether the document has the kind of content that rewrite needs (for example, numerical data or relationships for a math problem, a process or computable information for code, an entity other than the main subject for an entity-centered rewrite, a topic people would plausibly discuss for a forum thread) and whether the result would be faithful and useful rather than forced.
+
+Score each type:
+2 = a natural fit that would produce a valuable rewrite of this document
+1 = workable but not ideal
+0 = a poor fit that would be forced, unfaithful, or empty
+
+Menu:
+{menu}
+
+Document:
+{document}
+
+Reply with only a JSON object mapping each rewrite type name to its score, for example {"article": 2, "math": 0, ...}, with every type on the menu included.

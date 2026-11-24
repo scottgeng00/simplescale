@@ -1,0 +1,4 @@
+Rewrite the document as if you were {persona} writing for {audience}. Keep the key facts and ideas of the document, but choose the content, structure, vocabulary, and tone that this writer would naturally use for this audience. Do not add facts that are not in the document. Output only the rewritten text, nothing else.
+
+Document:
+{document}

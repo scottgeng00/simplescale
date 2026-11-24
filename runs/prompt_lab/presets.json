@@ -1,0 +1,112 @@
+[
+ {
+  "name": "(blank) {document}",
+  "model": "base",
+  "template": "{document}\n\n",
+  "stop": [
+   "<|endoftext|>"
+  ],
+  "max": 1500
+ },
+ {
+  "name": "Base sampling: ## Document 1 -> ## Document 2",
+  "model": "base",
+  "template": "## Document 1\n\n{document}\n\n## Document 2\n\n",
+  "stop": [
+   "\n## Document",
+   "<|endoftext|>"
+  ],
+  "max": 4096,
+  "temp": 1.0,
+  "top_p": 0.95,
+  "pp": 0.5
+ },
+ {
+  "name": "Math: Riddler puzzle column",
+  "model": "base",
+  "template": "The Riddler: Puzzles Inspired by Things You Read\n\nEach week we take a passage a reader sent in (a news story, a forum post, a product page, a biography, a recipe) and turn it into a puzzle. The puzzle doesn't quiz you on the passage. It takes an idea from it somewhere surprising, and it should be genuinely hard: the kind of problem that takes a strong solver an evening and has a single, exact answer. Solutions next week.\n\n## Riddler Classic\nFrom Ellen from Leeds, inspired by something they read:\n> Census records show that the village of Ashby had 2,300 residents in 1851 and 9,200 in 1901, two decades after the railway reached it.\n\nEllen was reading about her great-great-grandmother's village, which quadrupled in size over the fifty years after the railway came. That got her wondering how lumpy such growth can be.\n\nSuppose a census is taken every ten years, and between consecutive censuses the population is always multiplied by a whole number (1, 2, 3, ...). If the village goes from 2,300 to 9,200 over five decades, how many different sequences of census counts are possible? Extra credit: if instead it grew from 2,300 to 2,300 x 360 over the same five decades, how many sequences are possible?\n\n## Riddler Classic\nFrom Raj from Pune, inspired by something they read:\n> I'm removing items from a list inside a for loop, and sometimes it skips elements or throws an index error. I must be missing something here.\n\nRaj's coworker wrote a loop that deletes elements from a list while walking through it, and Raj noticed that it misses some of them. He turned the bug into a puzzle.\n\nA list holds the numbers 1 through n in order. A program walks through it with a pointer that starts at the first position. Whenever the number under the pointer is a multiple of 3, the program deletes it and everything after it shifts one place to the left. Either way, the pointer then moves one step to the right. The program stops when the pointer runs off the end. For n = 1,000, how many multiples of 3 survive? For which n does every multiple of 3 get deleted?\n\n## Riddler Classic\nFrom Priya from Toronto, inspired by something they read:\n> Sahir Ludhianvi (8 March 1921 - 25 October 1980) was a popular Urdu poet and Hindi lyricist. A commemorative stamp was issued on 8 March 2013, the 92nd anniversary of his birth.\n\nPriya noticed that the poet she was reading about was born on a Tuesday, and a stamp honoring him came out on his birthday 92 years later. She wondered how often such a coincidence could happen.\n\nA poet was born on Tuesday, March 8, 1921. A literary society issues a stamp on March 8 of every year in which that date falls on a Tuesday again. Between 1922 and 2021, how many stamps does the society issue, and what is the longest wait between two consecutive stamps?\n\n## Riddler Classic\nFrom Tomás from Austin, inspired by something they read:\n> {document}\n\n",
+  "stop": [
+   "\n## Riddler",
+   "\nFrom ",
+   "<|endoftext|>"
+  ],
+  "max": 600,
+  "temp": 0.8
+ },
+ {
+  "name": "Math: problem + named classic",
+  "model": "base",
+  "template": "Problems from Everywhere: Challenging Problems Inspired by Everyday Reading\n\nEvery problem in this collection began with something the author happened to read: a news story, a forum post, a product page, a biography, a recipe. The seed passage is quoted first. Then the author notes which piece of classical mathematics the passage suggested to them, and the idea that connects the two. The problem is an original, well-posed problem at olympiad / AIME difficulty built on that classical idea and dressed in the passage's situation, with a twist the passage motivated. It has a precise, checkable answer. Solutions are at the end of the book.\n\n### Problem 12\n*Seed:* Census records show that the village of Ashby had 2,300 residents in 1851 and 9,200 in 1901, two decades after the railway reached it.\n*Classic used:* ordered factorizations / stars and bars\n*Idea:* repeated growth by integer factors; counting the ordered factorizations of 4 into five factors\n*Difficulty:* ★★★★☆\n\nA town's population is recorded every ten years. Over each decade the population is multiplied by a positive integer factor (it never shrinks). Between 1851 and 1901 it grew from 2,300 to 9,200. How many different sequences of six recorded populations (1851, 1861, ..., 1901) are possible?\n\n### Problem 13\n*Seed:* I'm removing items from a list inside a for loop, and sometimes it skips elements or throws an index error. I must be missing something here.\n*Classic used:* the Josephus problem\n*Idea:* deleting from a list while iterating skips the element that slides into the deleted slot; which positions survive\n*Difficulty:* ★★★★☆\n\nA list holds the integers 1, 2, ..., n in order. A buggy program keeps an index i, starting at the first position. At each step, if the element at position i is a multiple of 3 it deletes it (later elements shift left); either way, it then advances i by one. The program stops when i passes the end of the list. Let R(n) be the number of multiples of 3 that survive. Find R(1000), and describe all n for which R(n) = 0.\n\n### Problem 14\n*Seed:* Sahir Ludhianvi (8 March 1921 - 25 October 1980) was a popular Urdu poet and Hindi lyricist. A commemorative stamp was issued on 8 March 2013, the 92nd anniversary of his birth.\n*Classic used:* the 28-year calendar cycle and day-of-week arithmetic\n*Idea:* a date recurring on the same weekday; the 28-year Gregorian cycle and leap years\n*Difficulty:* ★★★★☆\n\nA poet was born on Tuesday, 8 March 1921. A society issues a commemorative stamp on 8 March of every year in which that date again falls on a Tuesday. How many stamps are issued from 1922 through 2021, and what is the longest gap, in years, between consecutive stamps?\n\n### Problem 15\n*Seed:* {document}\n*Classic used:*",
+  "stop": [
+   "\n### ",
+   "<|endoftext|>",
+   "\nSolution"
+  ],
+  "max": 600,
+  "temp": 0.8
+ },
+ {
+  "name": "Math: textbook exercises",
+  "model": "base",
+  "template": "Chapter 6 Review: Quantitative Reasoning with Real-World Texts\n\nRead each passage, then solve the exercise that follows it. Every exercise uses only facts and numbers stated in its passage.\n\nPassage 1\nThe Riverside branch library extended its weekend hours in March. It now opens at 9 a.m. instead of 11 a.m. on Saturdays and Sundays, and closes at 5 p.m. as before. Visits on weekends rose from about 640 per weekend in February to 910 per weekend in April.\n\nExercise 1 (percent change): By what percentage did weekend visits increase from February to April? Round to the nearest whole percent.\n\nSolution: The increase is 910 - 640 = 270 visits. Relative to February: 270 / 640 = 0.4219, so visits rose by about 42%.\n\nAnswer: 42%\n\nPassage 2\nA hiking guide describes the Ridge Loop as 11.2 km long with 640 m of total climbing. It recommends budgeting 4 km per hour on flat ground plus one extra hour for every 600 m of ascent.\n\nExercise 2 (rates): Using the guide's rule, how long should a hiker budget for the Ridge Loop, in hours and minutes?\n\nSolution: Flat-ground time: 11.2 / 4 = 2.8 h. Climbing adds 640 / 600 = 1.0667 h. Total = 3.8667 h = 3 h 52 min.\n\nAnswer: about 3 hours 52 minutes\n\nPassage 3\n{document}\n\nExercise 3 (multi-step):",
+  "stop": [
+   "\nPassage 4",
+   "\nExercise 4",
+   "<|endoftext|>"
+  ],
+  "max": 600,
+  "temp": 0.9
+ },
+ {
+  "name": "Thread: 4chan",
+  "model": "base",
+  "template": "/sci/ - Science & Math » Thread #90486626\n\nAnonymous 11/18/23(Sat)14:02:11 No.90486626\n{document}\n\nthoughts?\n\nAnonymous 11/18/23(Sat)14:04:37 No.90486684\n>>90486626\n",
+  "stop": [
+   "<|endoftext|>"
+  ],
+  "max": 900
+ },
+ {
+  "name": "Thread: Reddit comments",
+  "model": "base",
+  "template": "r/explainlikeimfive • Posted by u/curious_cat_42\n\nI just read this and I have questions:\n\n{document}\n\n142 comments · sorted by best\n\nu/",
+  "stop": [
+   "<|endoftext|>"
+  ],
+  "max": 1200
+ },
+ {
+  "name": "Thread: Hacker News",
+  "model": "base",
+  "template": "Hacker News | new | past | comments | ask | show\n\n{document}\n\n318 points by throwaway_8812 6 hours ago | 141 comments\n\n",
+  "stop": [
+   "<|endoftext|>"
+  ],
+  "max": 1200
+ },
+ {
+  "name": "Q&A: StackExchange question about it",
+  "model": "base",
+  "template": "Reading this passage, I got stuck on something:\n\n> {document}\n\n",
+  "stop": [
+   "<|endoftext|>"
+  ],
+  "max": 1200
+ },
+ {
+  "name": "Lecture transcript",
+  "model": "base",
+  "template": "Lecture 7 transcript (auto-generated captions, lightly cleaned)\n\nPROFESSOR: OK, let's get started. Today's reading was this piece:\n\n\"{document}\"\n\nSo, what's actually going on here? ",
+  "stop": [
+   "<|endoftext|>"
+  ],
+  "max": 1500
+ },
+ {
+  "name": "Instruct: free prompt",
+  "model": "instruct",
+  "template": "{document}\n\nRewrite the text above as ",
+  "stop": [],
+  "max": 2000
+ }
+]

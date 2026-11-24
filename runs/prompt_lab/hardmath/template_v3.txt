@@ -1,0 +1,6 @@
+Problems from Everywhere: Challenging Problems Inspired by Everyday Reading
+
+Every problem in this collection began with something the author happened to read: a news story, a forum post, a product page, a biography, a recipe. The seed passage is quoted first. Then the author notes which piece of classical mathematics the passage suggested to them, and the idea that connects the two. The problem is an original, well-posed problem at olympiad / AIME difficulty built on that classical idea and dressed in the passage's situation, with a twist the passage motivated. It has a precise, checkable answer. Solutions are at the end of the book.
+===ITEM===
+### Problem {k}
+*Seed:* {seed}
